@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -566,12 +566,13 @@
       gap: 28px;
       align-items: center;
       flex-wrap: wrap;
-      background: linear-gradient(135deg, #132D52 0%, #1B3F6A 45%, #2563A8 100%);
+      background: linear-gradient(135deg, #B9DBFC 0%, #8EC3F9 50%, #5DA5F3 100%);
       border-radius: var(--radius-xl);
       padding: 28px 32px;
       margin-bottom: 20px;
-      color: #fff;
-      box-shadow: 0 8px 28px rgba(19, 45, 82, .35);
+      color: var(--navy);
+      border: 1px solid rgba(37, 99, 168, 0.25);
+      box-shadow: 0 8px 24px rgba(43, 78, 116, .14);
       position: relative;
       overflow: hidden;
       animation: scaleIn .4s ease both;
@@ -585,7 +586,7 @@
       width: 240px;
       height: 240px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(96, 165, 250, .2) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(75, 120, 164, .16) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -597,7 +598,7 @@
       width: 200px;
       height: 200px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(245, 158, 11, .12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(96, 140, 180, .10) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -618,13 +619,13 @@
 
     .gauge-bg {
       fill: none;
-      stroke: rgba(255, 255, 255, .12);
+      stroke: rgba(27, 63, 106, .16);
       stroke-width: 11;
     }
 
     .gauge-track {
       fill: none;
-      stroke: rgba(255, 255, 255, .06);
+      stroke: rgba(27, 63, 106, .09);
       stroke-width: 14;
     }
 
@@ -688,11 +689,11 @@
     }
 
     .ph-detail-item {
-      background: rgba(255, 255, 255, .08);
+      background: rgba(255, 255, 255, .56);
       border-radius: var(--radius-sm);
       padding: 10px 14px;
       backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, .1);
+      border: 1px solid rgba(110, 142, 176, .24);
     }
 
     .ph-detail-item .pd-label {
@@ -3114,7 +3115,7 @@
       document.getElementById('phPlanRate').textContent = planRate.toFixed(1) + '%';
       document.getElementById('phActualRate').textContent = actualRate.toFixed(1) + '%';
       document.getElementById('phGapRate').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%p';
-      document.getElementById('phGapRate').style.color = gap < -0.5 ? '#ffd1cf' : '#bdf2d3';
+      document.getElementById('phGapRate').style.color = gap < -0.5 ? '#B91C1C' : '#047857';
       document.getElementById('phDelayCnt').textContent = delayTasks.length + '건';
       document.getElementById('phMainLabel').textContent = gap < -0.5 ? '계획 대비 지연 중' : (gap > 0.5 ? '계획 대비 선행 중' : '계획대로 진행 중');
       document.getElementById('gaugeLabel').innerHTML = actualRate.toFixed(1) + '%<span class="g-sub">실적</span>';
