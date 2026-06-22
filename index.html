@@ -12,8 +12,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- GitHub Pages 배포용 EmailJS 설정. 값은 emailjs.config.js에서 관리합니다. -->
   <script src="emailjs.config.js"></script>
+  <!-- GitHub Pages 배포용 Supabase 설정. 값은 supabase.config.js에서 관리합니다. -->
+  <script src="supabase.config.js"></script>
   <style>
     :root {
       --navy: #1B3F6A;
@@ -2395,6 +2398,41 @@
           업로드한 데이터는 이 브라우저 화면에서만 사용되며 별도로 서버에 저장되지 않습니다(프로토타입 단계).
         </div>
       </div>
+
+      <!-- Supabase 클라우드 연동 카드 -->
+      <div class="card" style="margin-top: 20px;">
+        <h3>
+          <div class="h-left">
+            <div class="h-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg></div>
+            Supabase 클라우드 연동 (무료 데이터 동기화)
+          </div>
+          <span class="ejs-status-badge warn" id="supabaseStatusBadge">연동 안 됨</span>
+        </h3>
+        
+        <div class="ejs-guide">
+          공용 데이터베이스(Supabase)를 연동하면 다른 브라우저나 기기에서도 URL 공유(<code>?id=숫자</code>)를 통해 WBS 분석 데이터를 실시간으로 공유하고 조회할 수 있습니다.
+          <br>자세한 무료 구축 및 가이드는 프로젝트의 <code>implementation_plan.md</code> 또는 <code>README.md</code>를 참고하세요.
+        </div>
+        
+        <div class="ejs-fields">
+          <div class="ejs-field">
+            <label for="sbUrl">Supabase Project API URL</label>
+            <input type="text" id="sbUrl" placeholder="https://xyz.supabase.co">
+          </div>
+          <div class="ejs-field">
+            <label for="sbKey">Supabase Project API Anon Key</label>
+            <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+          </div>
+          <div class="ejs-field" style="display:flex;align-items:flex-end;">
+            <div class="ejs-field-actions" style="width:100%;">
+              <button class="btn btn-primary" id="btnSbSave" style="width:50%;">저장</button>
+              <button class="btn btn-ghost" id="btnSbClear" style="width:50%;">초기화</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ================= 분석 결과 조회 ================= -->
@@ -2686,10 +2724,128 @@
   <div id="toast"></div>
 
   <script>
+    /* ===================== Supabase 클라우드 연동 유틸 ===================== */
+    let _supabaseClient = null;
+
+    function getSupabaseConfig() {
+      const localUrl = localStorage.getItem('WBS_SUPABASE_URL');
+      const localKey = localStorage.getItem('WBS_SUPABASE_ANON_KEY');
+      if (localUrl && localKey) {
+        return { url: localUrl, anonKey: localKey };
+      }
+      if (window.WBS_SUPABASE_CONFIG && window.WBS_SUPABASE_CONFIG.url && window.WBS_SUPABASE_CONFIG.anonKey) {
+        return window.WBS_SUPABASE_CONFIG;
+      }
+      return { url: '', anonKey: '' };
+    }
+
+    function getSupabaseClient() {
+      if (_supabaseClient) return _supabaseClient;
+      const config = getSupabaseConfig();
+      if (config.url && config.anonKey) {
+        try {
+          _supabaseClient = supabase.createClient(config.url, config.anonKey);
+          return _supabaseClient;
+        } catch (e) {
+          console.error("Supabase client init error:", e);
+        }
+      }
+      return null;
+    }
+
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binary_string = window.atob(base64);
+      const len = binary_string.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
     const DEFAULT_WBS_DATA = [];
     const DEFAULT_WBS_TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`; })();
     let WBS_DATA = DEFAULT_WBS_DATA;
     let CURRENT_SOURCE_NAME = "";
+
+    function supabaseAddOrUpdate(record, existingId = null) {
+      const client = getSupabaseClient();
+      if (!client) return Promise.reject(new Error("Supabase not connected"));
+
+      const base64Data = record.fileData ? arrayBufferToBase64(record.fileData) : null;
+      const dbRecord = {
+        wbs_date: record.wbsDate,
+        file_name: record.fileName,
+        file_data: base64Data,
+        tasks: record.tasks,
+        summary: record.summary,
+        saved_at: record.savedAt
+      };
+
+      if (existingId) {
+        return client.from('wbs_analyses').update(dbRecord).eq('id', existingId).select('id')
+          .then(({ data, error }) => {
+            if (error) throw error;
+            if (data && data.length > 0) return data[0].id;
+            return client.from('wbs_analyses').insert(dbRecord).select('id').then(({ data: insData, error: insErr }) => {
+              if (insErr) throw insErr;
+              return insData[0].id;
+            });
+          });
+      } else {
+        return client.from('wbs_analyses').insert(dbRecord).select('id')
+          .then(({ data, error }) => {
+            if (error) throw error;
+            return data[0].id;
+          });
+      }
+    }
+
+    function getCombinedHistoryList() {
+      return dbGetAll().then(localList => {
+        const client = getSupabaseClient();
+        if (!client) return localList;
+        
+        return client.from('wbs_analyses').select('id, saved_at, wbs_date, file_name, summary').order('id', { ascending: false })
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Supabase select error:", error);
+              return localList;
+            }
+            
+            const cloudList = (data || []).map(row => ({
+              id: row.id,
+              savedAt: row.saved_at,
+              wbsDate: row.wbs_date,
+              fileName: row.file_name,
+              summary: row.summary
+            }));
+            
+            const mergedMap = new Map();
+            localList.forEach(r => mergedMap.set(r.id, r));
+            cloudList.forEach(r => {
+              const localRec = mergedMap.get(r.id);
+              if (localRec && localRec.fileData) {
+                r.fileData = localRec.fileData;
+                r.tasks = localRec.tasks;
+              }
+              mergedMap.set(r.id, r);
+            });
+            
+            return Array.from(mergedMap.values()).sort((a, b) => b.id - a.id);
+          });
+      });
+    }
 
     /* ===================== 날짜 유틸 ===================== */
     function parseDate(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
@@ -3216,8 +3372,9 @@
     });
 
     function populateFileSelect(activeId) {
-      dbGetAll().then(all => {
+      getCombinedHistoryList().then(all => {
         const sel = document.getElementById('fileSelect');
+        if (!sel) return;
         const dates = [...new Set(all.map(r => r.wbsDate))].sort((a, b) => a.localeCompare(b));
         sel.innerHTML = '<option value="">날짜 선택</option>' +
           dates.map(d => {
@@ -3809,29 +3966,52 @@
         }
       };
 
-      dbGetAll().then(all => {
-        const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
-        if (existing) {
-          if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
-          dbUpdate(existing.id, record).then(id => {
-            showToast('✔ 업데이트 완료 — 분석 결과 조회 메뉴에서 확인하세요.', 'ok');
-            updateHistoryCount();
-            populateFileSelect(id);
-            renderHistoryPage();
-          }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
-        } else {
-          dbAdd(record).then(id => {
-            showToast('✔ 저장 완료 — 분석 결과 조회 메뉴에서 확인하세요.', 'ok');
-            updateHistoryCount();
-            populateFileSelect(id);
-          }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
-        }
-      });
+      const client = getSupabaseClient();
+      if (client) {
+        getCombinedHistoryList().then(all => {
+          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
+          const existingId = existing ? existing.id : null;
+          
+          if (existingId && !confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
+          
+          showToast('클라우드에 저장하는 중...', 'info');
+          supabaseAddOrUpdate(record, existingId).then(globalId => {
+            dbUpdate(globalId, record).then(() => {
+              showToast('✔ 클라우드 및 로컬 저장 완료!', 'ok');
+              updateHistoryCount();
+              populateFileSelect(globalId);
+              renderHistoryPage();
+              updateUrlParam(globalId);
+            }).catch(err => showToast('로컬 캐시 저장 오류: ' + err.message, 'err'));
+          }).catch(err => showToast('클라우드 저장 오류: ' + err.message, 'err'));
+        });
+      } else {
+        dbGetAll().then(all => {
+          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
+          if (existing) {
+            if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
+            dbUpdate(existing.id, record).then(id => {
+              showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
+              updateHistoryCount();
+              populateFileSelect(id);
+              renderHistoryPage();
+              updateUrlParam(id);
+            }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
+          } else {
+            dbAdd(record).then(id => {
+              showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
+              updateHistoryCount();
+              populateFileSelect(id);
+              updateUrlParam(id);
+            }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
+          }
+        });
+      }
     }
 
     /* ===================== 분석 결과 조회 페이지 ===================== */
     function updateHistoryCount() {
-      dbGetAll().then(list => {
+      getCombinedHistoryList().then(list => {
         const badge = document.getElementById('navCountHistory');
         const label = document.getElementById('historyCountLabel');
         if (list.length > 0) {
@@ -3842,6 +4022,91 @@
         }
         if (label) label.textContent = `총 ${list.length}건`;
       });
+    }
+
+    /* === Supabase UI Event Handlers === */
+    function updateSupabaseStatus() {
+      const config = getSupabaseConfig();
+      const badge = document.getElementById('supabaseStatusBadge');
+      const urlInput = document.getElementById('sbUrl');
+      const keyInput = document.getElementById('sbKey');
+      
+      if (urlInput) urlInput.value = config.url || '';
+      if (keyInput) keyInput.value = config.anonKey || '';
+
+      const client = getSupabaseClient();
+      if (client) {
+        badge.textContent = '연동 됨';
+        badge.className = 'ejs-status-badge ok';
+      } else {
+        badge.textContent = '연동 안 됨';
+        badge.className = 'ejs-status-badge warn';
+      }
+    }
+
+    function initSupabaseEvents() {
+      const btnSave = document.getElementById('btnSbSave');
+      const btnClear = document.getElementById('btnSbClear');
+      
+      if (btnSave) {
+        btnSave.addEventListener('click', () => {
+          const url = document.getElementById('sbUrl').value.trim();
+          const key = document.getElementById('sbKey').value.trim();
+          
+          if (!url || !key) {
+            showToast('API URL과 Anon Key를 모두 입력하세요.', 'err');
+            return;
+          }
+          
+          localStorage.setItem('WBS_SUPABASE_URL', url);
+          localStorage.setItem('WBS_SUPABASE_ANON_KEY', key);
+          _supabaseClient = null;
+          
+          const testClient = getSupabaseClient();
+          if (testClient) {
+            testClient.from('wbs_analyses').select('id').limit(1).then(({ error }) => {
+              if (error) {
+                showToast('연동 실패: ' + error.message, 'err');
+                localStorage.removeItem('WBS_SUPABASE_URL');
+                localStorage.removeItem('WBS_SUPABASE_ANON_KEY');
+                _supabaseClient = null;
+                updateSupabaseStatus();
+              } else {
+                showToast('Supabase 클라우드 연동 성공!', 'ok');
+                updateSupabaseStatus();
+                updateHistoryCount();
+                populateFileSelect();
+                renderHistoryPage();
+              }
+            }).catch(err => {
+              showToast('연동 실패: ' + err.message, 'err');
+              localStorage.removeItem('WBS_SUPABASE_URL');
+              localStorage.removeItem('WBS_SUPABASE_ANON_KEY');
+              _supabaseClient = null;
+              updateSupabaseStatus();
+            });
+          } else {
+            showToast('Supabase 클라이언트 생성 실패.', 'err');
+            updateSupabaseStatus();
+          }
+        });
+      }
+      
+      if (btnClear) {
+        btnClear.addEventListener('click', () => {
+          if (!confirm('Supabase 클라우드 설정을 초기화하시겠습니까? (로컬 IndexedDB 데이터는 보존됩니다)')) return;
+          localStorage.removeItem('WBS_SUPABASE_URL');
+          localStorage.removeItem('WBS_SUPABASE_ANON_KEY');
+          _supabaseClient = null;
+          document.getElementById('sbUrl').value = '';
+          document.getElementById('sbKey').value = '';
+          showToast('클라우드 연동이 초기화되었습니다.', '');
+          updateSupabaseStatus();
+          updateHistoryCount();
+          populateFileSelect();
+          renderHistoryPage();
+        });
+      }
     }
 
     function resetHistSearch() {
@@ -3990,15 +4255,18 @@
 
     function renderHistoryPage() {
       const sel = document.getElementById('histSearchName');
+      if (!sel) return;
       const selectedDate = sel.value;
       const container = document.getElementById('historyList');
       const label = document.getElementById('historyCountLabel');
 
-      dbGetAll().then(all => {
-        label.textContent = `총 ${all.length}건`;
+      getCombinedHistoryList().then(all => {
+        if (label) label.textContent = `총 ${all.length}건`;
         const badge = document.getElementById('navCountHistory');
-        if (all.length > 0) { badge.textContent = all.length; badge.style.display = 'inline-flex'; }
-        else badge.style.display = 'none';
+        if (badge) {
+          if (all.length > 0) { badge.textContent = all.length; badge.style.display = 'inline-flex'; }
+          else badge.style.display = 'none';
+        }
 
         // SELECT 옵션 갱신 (wbsDate 오름차순, 중복 제거)
         const dates = [...new Set(all.map(r => r.wbsDate))].sort((a, b) => a.localeCompare(b));
@@ -4177,44 +4445,116 @@
 
     function restoreAnalysis(id) {
       dbGet(id).then(r => {
-        if (!r) { showToast('저장 레코드를 찾을 수 없습니다.', 'err'); return; }
-        WBS_DATA = r.tasks;
-        CURRENT_SOURCE_NAME = r.fileName;
-        CURRENT_FILE_BUFFER = r.fileData;
-        TODAY = startOfDay(parseDate(r.wbsDate));
-        initFilters();
-        renderAll();
-        showSaveBar(r.fileName, r.wbsDate, r.tasks.length);
-        showToast(`✔ "${r.fileName}" (기준일 ${r.wbsDate}) 불러오기 완료`, 'ok');
-        updateUrlParam(id);
-        navigateTo('p-dash');
+        if (r) {
+          loadAnalysisRecord(r, id);
+        } else {
+          const client = getSupabaseClient();
+          if (client) {
+            showToast('클라우드에서 데이터를 불러오는 중...', 'info');
+            client.from('wbs_analyses').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
+              if (error) throw error;
+              if (!data) {
+                showToast('저장 레코드를 찾을 수 없습니다.', 'err');
+                return;
+              }
+              const arrayBuffer = data.file_data ? base64ToArrayBuffer(data.file_data) : null;
+              const record = {
+                id: data.id,
+                savedAt: data.saved_at,
+                wbsDate: data.wbs_date,
+                fileName: data.file_name,
+                fileData: arrayBuffer,
+                tasks: data.tasks,
+                summary: data.summary
+              };
+              dbUpdate(data.id, record).then(() => {
+                loadAnalysisRecord(record, data.id);
+                updateHistoryCount();
+                populateFileSelect(data.id);
+              }).catch(() => {
+                loadAnalysisRecord(record, data.id);
+              });
+            }).catch(err => showToast('클라우드 불러오기 오류: ' + err.message, 'err'));
+          } else {
+            showToast('저장 레코드를 찾을 수 없습니다 (클라우드 미연동).', 'err');
+          }
+        }
       }).catch(err => showToast('불러오기 오류: ' + err.message, 'err'));
+    }
+
+    function loadAnalysisRecord(r, id) {
+      WBS_DATA = r.tasks;
+      CURRENT_SOURCE_NAME = r.fileName;
+      CURRENT_FILE_BUFFER = r.fileData;
+      TODAY = startOfDay(parseDate(r.wbsDate));
+      initFilters();
+      renderAll();
+      showSaveBar(r.fileName, r.wbsDate, r.tasks.length);
+      showToast(`✔ "${r.fileName}" (기준일 ${r.wbsDate}) 불러오기 완료`, 'ok');
+      updateUrlParam(id);
+      navigateTo('p-dash');
     }
 
     function downloadAnalysisFile(id) {
       dbGet(id).then(r => {
-        if (!r || !r.fileData) { showToast('저장된 파일 데이터가 없습니다.', 'err'); return; }
-        const blob = new Blob([r.fileData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = r.fileName;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`"${r.fileName}" 다운로드 시작`, 'ok');
+        if (r && r.fileData) {
+          triggerFileDownload(r.fileName, r.fileData);
+        } else {
+          const client = getSupabaseClient();
+          if (client) {
+            showToast('클라우드에서 파일 데이터를 가져오는 중...', 'info');
+            client.from('wbs_analyses').select('file_name, file_data').eq('id', id).maybeSingle().then(({ data, error }) => {
+              if (error) throw error;
+              if (!data || !data.file_data) {
+                showToast('저장된 파일 데이터가 없습니다.', 'err');
+                return;
+              }
+              const buffer = base64ToArrayBuffer(data.file_data);
+              triggerFileDownload(data.file_name, buffer);
+            }).catch(err => showToast('다운로드 오류: ' + err.message, 'err'));
+          } else {
+            showToast('저장된 파일 데이터가 없습니다.', 'err');
+          }
+        }
       }).catch(err => showToast('다운로드 오류: ' + err.message, 'err'));
+    }
+
+    function triggerFileDownload(fileName, fileBuffer) {
+      const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`"${fileName}" 다운로드 시작`, 'ok');
     }
 
     function deleteAnalysis(id) {
       dbGet(id).then(r => {
-        if (!r) return;
-        if (!confirm(`"${r.fileName}" (기준일 ${r.wbsDate}) 저장 결과를 삭제하시겠습니까?`)) return;
-        dbDelete(id).then(() => {
-          showToast('삭제되었습니다.', '');
-          renderHistoryPage();
-          updateHistoryCount();
-          populateFileSelect();
-        }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
+        const labelName = r ? `"${r.fileName}" (기준일 ${r.wbsDate})` : `ID ${id}번 레코드`;
+        if (!confirm(`${labelName} 저장 결과를 삭제하시겠습니까?`)) return;
+
+        const client = getSupabaseClient();
+        if (client) {
+          showToast('클라우드에서 삭제 중...', 'info');
+          client.from('wbs_analyses').delete().eq('id', id).then(({ error }) => {
+            if (error) throw error;
+            dbDelete(id).then(() => {
+              showToast('삭제되었습니다.', '');
+              updateHistoryCount();
+              populateFileSelect();
+              renderHistoryPage();
+            }).catch(err => showToast('로컬 캐시 삭제 오류: ' + err.message, 'err'));
+          }).catch(err => showToast('클라우드 삭제 오류: ' + err.message, 'err'));
+        } else {
+          dbDelete(id).then(() => {
+            showToast('삭제되었습니다.', '');
+            updateHistoryCount();
+            populateFileSelect();
+            renderHistoryPage();
+          }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
+        }
       });
     }
 
@@ -4240,6 +4580,8 @@
     initFilters();
     renderAll();
     initDB().then(() => {
+      updateSupabaseStatus();
+      initSupabaseEvents();
       updateHistoryCount();
       populateFileSelect();
       renderMembersPage();
@@ -4249,7 +4591,7 @@
       } else {
         // 최초 진입 시에는 저장된 WBS 중 Today(기준일)가 가장 최근인 파일을 기본으로 불러옵니다.
         // 같은 기준일이 여러 건이면 가장 나중에 저장한 파일을 선택합니다.
-        dbGetAll().then(all => {
+        getCombinedHistoryList().then(all => {
           const latest = all
             .filter(r => r.wbsDate && parseDate(r.wbsDate))
             .sort((a, b) => {
