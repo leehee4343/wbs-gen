@@ -3493,7 +3493,8 @@
       const select = document.getElementById('mailBaselineSelect');
       if (!select) return;
       const selected = select.value || 'current';
-      dbGetAll().then(all => {
+      // Supabase 포함 전체 이력에서 기준일 목록 구성
+      getCombinedHistoryList().then(all => {
         // 업로드된 파일 1개당 1개의 기준일만 표시 (wbsDate 기준 최신 저장본)
         const byDate = new Map();
         [...all]
@@ -3503,6 +3504,27 @@
         select.innerHTML = '<option value="current">기준일 선택 — 현재 분석 (' + fmt(TODAY) + ')</option>' +
           records.map(r => `<option value="${r.id}">${r.wbsDate} · ${r.fileName}</option>`).join('');
         select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
+      });
+    }
+
+    // IndexedDB 우선, 없으면 Supabase에서 tasks 포함 전체 레코드 fetch
+    function fetchFullRecord(id) {
+      return dbGet(id).then(local => {
+        if (local && local.tasks) return local;
+        const client = getSupabaseClient();
+        if (!client) return local || null;
+        return client.from('wbs_analyses').select('*').eq('id', id).maybeSingle()
+          .then(({ data, error }) => {
+            if (error || !data) return local || null;
+            return {
+              id: data.id,
+              savedAt: data.saved_at,
+              wbsDate: data.wbs_date,
+              fileName: data.file_name,
+              tasks: data.tasks,
+              summary: data.summary
+            };
+          });
       });
     }
 
@@ -3541,7 +3563,7 @@
         setMailBodyWithNotice(editor, text, `기준일 ${fmt(TODAY)}의 업무 텍스트를 본문에 넣었습니다.`);
         return;
       }
-      dbGet(Number(value)).then(record => {
+      fetchFullRecord(Number(value)).then(record => {
         if (!record) { showToast('선택한 분석 결과를 찾을 수 없습니다.', 'err'); return; }
         const baseline = startOfDay(parseDate(record.wbsDate));
         const text = buildNextWeekText(record.tasks, baseline, record.fileName);
@@ -3554,12 +3576,25 @@
       ensureMailEditor();
       populateMailBaselineSelect();
       renderEjsStatus();
+      const subjectEl = document.getElementById('mailSubject');
+      if (subjectEl && !subjectEl.value) {
+        subjectEl.value = '안녕하세요. 이희성 이사입니다. (차주 주간보고서 작성요청의 건)';
+      }
       mdbGetAll().then(members => {
         _mailTo.clear();
         _mailCc.clear();
         const toWrap = document.getElementById('mailToChips');
         const ccWrap = document.getElementById('mailCcChips');
         if (!toWrap || !ccWrap) return;
+
+        // 구성원 '이희성'의 이메일을 보내는 사람 주소로 표시
+        const sender = members.find(m => m.name === '이희성');
+        if (sender) {
+          const fromName = document.getElementById('mailFromName');
+          const fromAddr = document.getElementById('mailFromAddr');
+          if (fromName) fromName.textContent = sender.name;
+          if (fromAddr) fromAddr.textContent = sender.email;
+        }
 
         if (members.length === 0) {
           const msg = `<span class="mail-chip-empty">등록된 구성원이 없습니다. <a onclick="navigateTo('p-members')">구성원 관리</a>에서 먼저 추가하세요.</span>`;
