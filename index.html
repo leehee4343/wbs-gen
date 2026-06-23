@@ -2561,6 +2561,7 @@
         <div class="page-title">메일 보내기</div>
         <div class="breadcrumb"><span>홈</span><span class="breadcrumb-sep">›</span><span>메일 발송 관리</span><span class="breadcrumb-sep">›</span><span class="bc-cur">메일 보내기</span></div>
       </div>
+
       <div class="card">
         <h3>
           <div class="h-left">
@@ -3493,11 +3494,42 @@
       if (!select) return;
       const selected = select.value || 'current';
       dbGetAll().then(all => {
-        const records = [...all].sort((a, b) => b.wbsDate.localeCompare(a.wbsDate));
+        // 업로드된 파일 1개당 1개의 기준일만 표시 (wbsDate 기준 최신 저장본)
+        const byDate = new Map();
+        [...all]
+          .sort((a, b) => (a.savedAt || '').localeCompare(b.savedAt || ''))
+          .forEach(r => byDate.set(r.wbsDate, r));
+        const records = [...byDate.values()].sort((a, b) => b.wbsDate.localeCompare(a.wbsDate));
         select.innerHTML = '<option value="current">기준일 선택 — 현재 분석 (' + fmt(TODAY) + ')</option>' +
           records.map(r => `<option value="${r.id}">${r.wbsDate} · ${r.fileName}</option>`).join('');
         select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
       });
+    }
+
+    const MAIL_HEADER_NOTICE =
+      '안녕하세요. 이희성 이사입니다.\n' +
+      '금주 지연 업무와 차주 할일에 대해서 안내드립니다.\n\n' +
+      '해당 일정을 확인하신 후 파트(PM/기획, 개발, UI/UX) 차주 수요일까지 주간보고에 넣을 내용을 메일로 제출 부탁드립니다.\n\n' +
+      '메일 주소 : 이희성  leehee43@16block.com\n\n' +
+      '-'.repeat(95) + '\n' +
+      '1. 금주 진행 업무 : 금주(월~금) 진행한 업무 내역(자유 기재)\n' +
+      '2. 차주 진행 업무 : 차주(월~금)에 진행할 업무 내역(자유 기재)\n' +
+      '3. 일정계획의 업무별 진도율 : 비율로 표시(예 : 시스템인프라 분석(80%))\n' +
+      '4. 지연 업무 및 사유 : 일정계획 대비 달성하지 못한 업무 목록 나열 + 캐치업 방안\n' +
+      '5. 요청 및 이슈사항 : 주관기관 담당자에게 보고해야 할 요청 및 이슈사항(자유 기재)\n' +
+      '-'.repeat(95) + '\n' +
+      '차주에 해야할 업무를 파트별로 일정을 보고 확인하셔야 하나,\n' +
+      '확인 차원에서 본 메일은 매주 금요일에 발송드리겠습니다.\n\n' +
+      '항상 감사드립니다.\n\n';
+
+    function setMailBodyWithNotice(editor, bodyText, toastMsg) {
+      editor.setContents({
+        ops: [
+          { insert: MAIL_HEADER_NOTICE, attributes: { bold: true } },
+          { insert: bodyText }
+        ]
+      });
+      showToast(toastMsg, 'ok');
     }
 
     function fillMailBodyFromBaseline(value) {
@@ -3506,8 +3538,7 @@
       if (value === 'current') {
         const text = buildNextWeekText(WBS_DATA, TODAY, CURRENT_SOURCE_NAME);
         if (!text) { showToast('현재 분석 결과에 복사할 업무가 없습니다.', ''); return; }
-        editor.setText(text);
-        showToast(`기준일 ${fmt(TODAY)}의 업무 텍스트를 본문에 넣었습니다.`, 'ok');
+        setMailBodyWithNotice(editor, text, `기준일 ${fmt(TODAY)}의 업무 텍스트를 본문에 넣었습니다.`);
         return;
       }
       dbGet(Number(value)).then(record => {
@@ -3515,8 +3546,7 @@
         const baseline = startOfDay(parseDate(record.wbsDate));
         const text = buildNextWeekText(record.tasks, baseline, record.fileName);
         if (!text) { showToast('선택한 기준일에 복사할 업무가 없습니다.', ''); return; }
-        editor.setText(text);
-        showToast(`기준일 ${record.wbsDate}의 업무 텍스트를 본문에 넣었습니다.`, 'ok');
+        setMailBodyWithNotice(editor, text, `기준일 ${record.wbsDate}의 업무 텍스트를 본문에 넣었습니다.`);
       }).catch(err => showToast('분석 결과 불러오기 오류: ' + err.message, 'err'));
     }
 
