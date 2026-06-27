@@ -1,0 +1,16 @@
+WBS 기반 일정분석 프로그램 (범용 멀티프로젝트 버전)
+========================================================
+
+▶ 서비스 URL
+https://leehee4343.github.io/wbs-gen/
+
+▶ GitHub 레파지토리
+https://github.com/leehee4343/wbs-gen
+
+▶ 배포일
+2026-06-27
+
+▶ 참고
+- GitHub Pages 첫 빌드는 수 분 소요될 수 있습니다.
+- Supabase 연동 필요: supabase.config.js 에 URL 및 Anon Key 설정
+- 프로젝트 테이블 생성 필요: supabase_setup_gen.sql 실행 (Supabase SQL Editor)
