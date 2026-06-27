@@ -4205,13 +4205,13 @@
       };
 
       const client = getSupabaseClient();
-      if (client) {
+      if (client && _currentProject) {
         getCombinedHistoryList().then(all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
           const existingId = existing ? existing.id : null;
-          
+
           if (existingId && !confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
-          
+
           showToast('클라우드에 저장하는 중...', 'info');
           supabaseAddOrUpdate(record, existingId).then(globalId => {
             genDbUpdate(globalId, Object.assign({}, record, { project_id: _currentProject?.id })).catch(() => {});
@@ -4237,13 +4237,15 @@
           });
         });
       } else {
+        const pid = _currentProject?.id ?? null;
+        const localMsg = _currentProject ? '✔ 로컬 저장 완료 (클라우드 미연동)' : '✔ 브라우저에만 저장됨 (프로젝트 미선택)';
         genDbGetAll().then(all => {
-          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && r.project_id === _currentProject?.id);
-          const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id });
+          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && (r.project_id ?? null) === pid);
+          const recWithPid = Object.assign({}, record, { project_id: pid });
           if (existing) {
             if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
             genDbUpdate(existing.id, recWithPid).then(id => {
-              showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
+              showToast(localMsg, 'ok');
               updateHistoryCount();
               populateFileSelect(id);
               renderHistoryPage();
@@ -4251,7 +4253,7 @@
             }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
           } else {
             genDbAdd(recWithPid).then(id => {
-              showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
+              showToast(localMsg, 'ok');
               updateHistoryCount();
               populateFileSelect(id);
               updateUrlParam(id);
@@ -5140,14 +5142,14 @@
         }).catch(() => {
           localStorage.removeItem(GEN_PROJECT_KEY);
           updateHistoryCount(); populateFileSelect(); renderMembersPage();
-          requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
+          navigateTo('p-upload');
         });
       } else {
         updateHistoryCount(); populateFileSelect(); renderMembersPage();
-        requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
+        navigateTo('p-upload');
       }
     }).catch(() => {
-      requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
+      navigateTo('p-upload');
     });
   </script>
 </body>
