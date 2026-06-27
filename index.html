@@ -4185,6 +4185,9 @@
       if (!CURRENT_FILE_BUFFER) {
         showToast('먼저 WBS 파일을 업로드하세요.', 'err'); return;
       }
+      if (!_currentProject) {
+        showToast('프로젝트를 선택해야 클라우드에 저장됩니다. (관리자 로그인 필요)', 'err'); return;
+      }
       const planRate = calcPlanRate();
       const actualRate = calcActualRate();
       const record = {
@@ -4205,7 +4208,7 @@
       };
 
       const client = getSupabaseClient();
-      if (client && _currentProject) {
+      if (client) {
         getCombinedHistoryList().then(all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
           const existingId = existing ? existing.id : null;
@@ -5099,54 +5102,81 @@
       updateSupabaseStatus();
       initSupabaseEvents();
 
+      const client = getSupabaseClient();
+
+      // 프로젝트가 로드된 후 분석 데이터를 복원하는 공통 함수
+      function afterProjectLoaded(proj, initId) {
+        _currentProject = proj;
+        localStorage.setItem(GEN_PROJECT_KEY, String(proj.id));
+        updateProjectUI();
+        updateHistoryCount();
+        populateFileSelect();
+        renderMembersPage();
+
+        const doLoadLatest = () => getCombinedHistoryList().then(all => {
+          const latest = all
+            .filter(r => r.wbsDate && parseDate(r.wbsDate))
+            .sort((a, b) => {
+              const byWbsDate = b.wbsDate.localeCompare(a.wbsDate);
+              return byWbsDate || String(b.savedAt || '').localeCompare(String(a.savedAt || ''));
+            })[0];
+          if (latest) restoreAnalysis(latest.id);
+          else navigateTo('p-upload');
+        }).catch(() => navigateTo('p-upload'));
+
+        if (initId && client) {
+          client.from('wbs_gen_analyses').select('id, project_id').eq('id', Number(initId)).maybeSingle()
+            .then(({ data }) => {
+              if (data && data.project_id === proj.id) restoreAnalysis(Number(initId));
+              else { updateUrlParam(null); doLoadLatest(); }
+            }).catch(() => doLoadLatest());
+        } else {
+          doLoadLatest();
+        }
+      }
+
+      // ?id= 파라미터로 분석 레코드를 역추적해 프로젝트 자동 로드 (인증 불요)
+      function tryLoadByAnalysisId(initId, fallback) {
+        if (!initId || !client) { fallback(); return; }
+        client.from('wbs_gen_analyses').select('id, project_id').eq('id', Number(initId)).maybeSingle()
+          .then(({ data }) => {
+            if (!data || !data.project_id) { fallback(); return; }
+            return client.from('wbs_gen_projects').select('*').eq('id', data.project_id).single()
+              .then(({ data: proj, error }) => {
+                if (error || !proj) { fallback(); return; }
+                afterProjectLoaded(proj, initId);
+              });
+          }).catch(() => fallback());
+      }
+
+      // Supabase에서 첫 번째 프로젝트를 자동 로드 (프로젝트 미선택 브라우저용)
+      function tryAutoLoadFirstProject(initId) {
+        if (!client) { navigateTo('p-upload'); return; }
+        client.from('wbs_gen_projects').select('*').order('id').limit(1)
+          .then(({ data, error }) => {
+            if (error || !data || data.length === 0) { navigateTo('p-upload'); return; }
+            afterProjectLoaded(data[0], initId);
+          }).catch(() => navigateTo('p-upload'));
+      }
+
+      const initId = new URLSearchParams(window.location.search).get('id');
       const savedProjId = localStorage.getItem(GEN_PROJECT_KEY);
+
       if (savedProjId) {
-        const client = getSupabaseClient();
         const load = client
           ? client.from('wbs_gen_projects').select('*').eq('id', Number(savedProjId)).single()
               .then(({ data, error }) => { if (error || !data) throw new Error('not found'); return data; })
           : Promise.reject(new Error('no client'));
 
-        load.then(proj => {
-          _currentProject = proj;
-          updateProjectUI();
-          updateHistoryCount();
-          populateFileSelect();
-          renderMembersPage();
-          const initId = new URLSearchParams(window.location.search).get('id');
-          const doLoadLatest = () => getCombinedHistoryList().then(all => {
-            const latest = all
-              .filter(r => r.wbsDate && parseDate(r.wbsDate))
-              .sort((a, b) => {
-                const byWbsDate = b.wbsDate.localeCompare(a.wbsDate);
-                return byWbsDate || String(b.savedAt || '').localeCompare(String(a.savedAt || ''));
-              })[0];
-            if (latest) restoreAnalysis(latest.id);
-            else navigateTo('p-upload');
-          }).catch(() => navigateTo('p-upload'));
-
-          if (initId && client) {
-            // URL ?id= 파라미터가 현재 프로젝트 소속인지 확인 후 복원
-            client.from('wbs_gen_analyses').select('id, project_id').eq('id', Number(initId)).maybeSingle()
-              .then(({ data }) => {
-                if (data && data.project_id === proj.id) {
-                  restoreAnalysis(Number(initId));
-                } else {
-                  updateUrlParam(null);
-                  doLoadLatest();
-                }
-              }).catch(() => doLoadLatest());
-          } else {
-            doLoadLatest();
-          }
-        }).catch(() => {
-          localStorage.removeItem(GEN_PROJECT_KEY);
-          updateHistoryCount(); populateFileSelect(); renderMembersPage();
-          navigateTo('p-upload');
-        });
+        load.then(proj => afterProjectLoaded(proj, initId))
+          .catch(() => {
+            localStorage.removeItem(GEN_PROJECT_KEY);
+            // localStorage의 프로젝트가 없어진 경우 → ?id= 역추적 또는 첫 프로젝트 자동 로드
+            tryLoadByAnalysisId(initId, () => tryAutoLoadFirstProject(initId));
+          });
       } else {
-        updateHistoryCount(); populateFileSelect(); renderMembersPage();
-        navigateTo('p-upload');
+        // 새 브라우저/미선택: ?id= 역추적 → 없으면 첫 프로젝트 자동 로드
+        tryLoadByAnalysisId(initId, () => tryAutoLoadFirstProject(initId));
       }
     }).catch(() => {
       navigateTo('p-upload');
