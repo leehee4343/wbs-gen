@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PMS·SRM 재구축 | WBS 일정 분석</title>
+  <title>WBS 일정 분석</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
@@ -103,6 +103,86 @@
       font-size: 15px;
       display: flex;
       line-height: 1.5;
+    }
+
+    /* ===== 프로젝트 관리 모달 ===== */
+    .proj-overlay {
+      display: none; position: fixed; inset: 0; z-index: 8900;
+      align-items: center; justify-content: center;
+      padding: 20px; box-sizing: border-box;
+      background: rgba(15, 30, 52, .62); backdrop-filter: blur(5px);
+    }
+    .proj-overlay.open { display: flex; animation: auth-fade-in .18s ease-out; }
+    .proj-modal {
+      width: min(100%, 580px); max-height: 88vh; overflow: hidden;
+      background: var(--card); border: 1px solid rgba(255,255,255,.72);
+      border-radius: 16px; box-shadow: 0 24px 70px rgba(7, 20, 39, .34);
+      display: flex; flex-direction: column;
+      animation: auth-card-in .22s cubic-bezier(.2,.8,.2,1);
+    }
+    .proj-modal-head {
+      position: relative; padding: 20px 24px 18px;
+      background: linear-gradient(135deg, var(--navy), #245888);
+      color: #fff; flex-shrink: 0;
+    }
+    .proj-modal-title { font-size: 18px; font-weight: 700; margin-top: 8px; }
+    .proj-modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .proj-add-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--navy2); color: #fff; border: none;
+      border-radius: var(--radius-sm); padding: 8px 16px;
+      font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px;
+      transition: opacity .15s;
+    }
+    .proj-add-btn:hover { opacity: .85; }
+    .proj-add-form {
+      background: var(--bg2); border: 1.5px solid var(--line);
+      border-radius: var(--radius-md); padding: 18px 20px;
+      margin-bottom: 16px; display: none;
+    }
+    .proj-add-form.open { display: block; }
+    .proj-add-form h4 { font-size: 14px; font-weight: 700; color: var(--navy); margin: 0 0 14px; }
+    .proj-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+    .proj-form-grid .full { grid-column: 1 / -1; }
+    .pf-group { display: flex; flex-direction: column; gap: 4px; }
+    .pf-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .pf-group input {
+      border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+      padding: 7px 10px; font-size: 13px; color: var(--navy);
+      background: #fff; outline: none; transition: border-color .15s; font-family: inherit;
+    }
+    .pf-group input:focus { border-color: var(--navy2); }
+    .proj-form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    .proj-list { display: flex; flex-direction: column; gap: 8px; }
+    .proj-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border: 1.5px solid var(--line);
+      border-radius: var(--radius-md); background: var(--card2);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .proj-card:hover { border-color: var(--navy3); box-shadow: var(--shadow-sm); }
+    .proj-card.current-proj { border-color: var(--accent); background: #FFFBF0; }
+    .proj-card-info { flex: 1; min-width: 0; }
+    .proj-card-name { font-size: 15px; font-weight: 700; color: var(--navy); }
+    .proj-card-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .proj-card-dates { font-size: 11px; color: var(--text-sub); margin-top: 3px; }
+    .proj-card-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+    .proj-empty { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 14px; }
+    .proj-current-badge {
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      background: #FEF3C7; border: 1px solid #FDE68A;
+      border-radius: 20px; padding: 3px 9px; white-space: nowrap;
+    }
+    /* 사이드바 프로젝트 전환 버튼 */
+    .proj-switch-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 5px; margin-left: auto;
+      background: rgba(255,255,255,.12); color: rgba(255,255,255,.7);
+      border: none; cursor: pointer; transition: background .15s; flex-shrink: 0;
+    }
+    .proj-switch-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
+    .brand-b2-row {
+      display: flex; align-items: center; gap: 6px; margin-top: 6px;
     }
 
     /* ===== 사이드바 ===== */
@@ -1927,7 +2007,13 @@
   <!-- ===== 사이드바 ===== -->
   <div class="sidebar">
     <div class="brand">
-      <div class="b2">PMS·SRM 재구축 용역<br>WBS 일정 분석</div>
+      <div class="b1">WBS 일정 분석 · 범용</div>
+      <div class="brand-b2-row">
+        <div class="b2" id="sidebarProjectName" style="font-size:14.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">프로젝트 미선택</div>
+        <button class="proj-switch-btn" onclick="onClickProjectSwitch()" title="프로젝트 전환">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+      </div>
       <div class="b-dot"><span></span><em>WBS 기반 자동 분석</em></div>
     </div>
 
@@ -2026,7 +2112,7 @@
           </svg>
         </button>
         <div class="topbar-left">
-          <h1>PMS·SRM 재구축 용역 — WBS 일정 분석</h1>
+          <h1 id="topbarProjectName">WBS 일정 분석</h1>
           <div class="sub">상세일정계획 WBS 기준, 공정율과 지연 업무를 자동 분석합니다. <span class="src-tag" id="srcTag">기본 데이터:
               20260602_상세일정계획_WBS</span></div>
         </div>
@@ -2674,7 +2760,7 @@
       </div>
     </div>
 
-    <div class="footer">PMS·SRM 재구축 용역 상세일정계획 WBS 기반 프로토타입 · 작성자: 이희성</div>
+    <div class="footer">WBS 일정 분석 프로그램 (범용) · 작성자: 이희성</div>
   </div>
 
   <!-- 비밀번호 모달 -->
@@ -2689,7 +2775,7 @@
           <span class="auth-lock-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           관리자 접근 확인
         </div>
-        <p class="auth-card-desc">구성원 관리와 메일 보내기 메뉴는 관리자 확인 후 이용할 수 있습니다.</p>
+        <p class="auth-card-desc" id="authCardDesc">관리자 확인 후 이용할 수 있습니다.</p>
       </div>
       <div class="auth-card-body">
         <label class="auth-field-label" for="authPwInput">관리자 비밀번호</label>
@@ -2710,10 +2796,55 @@
     </div>
   </div>
 
+  <!-- ===== 프로젝트 관리 모달 ===== -->
+  <div id="projOverlay" class="proj-overlay" onclick="if(event.target===this)closeProjModal()" role="dialog" aria-modal="true">
+    <div class="proj-modal">
+      <div class="proj-modal-head">
+        <button class="auth-close" type="button" onclick="closeProjModal()" aria-label="닫기">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <div class="auth-eyebrow"><span style="width:6px;height:6px;border-radius:50%;background:#6EE7B7;display:inline-block"></span>&nbsp;ADMIN · 프로젝트 관리</div>
+        <div class="proj-modal-title">프로젝트 목록</div>
+      </div>
+      <div class="proj-modal-body">
+        <!-- 추가/수정 폼 -->
+        <div class="proj-add-form" id="projAddForm">
+          <h4 id="projAddFormTitle">새 프로젝트 추가</h4>
+          <input type="hidden" id="pfEditId">
+          <div class="proj-form-grid">
+            <div class="pf-group full">
+              <label>프로젝트명 <span style="color:var(--red)">*</span></label>
+              <input type="text" id="pfName" placeholder="예) PMS·SRM 재구축 용역" onkeydown="if(event.key==='Enter')saveProjForm()">
+            </div>
+          </div>
+          <div class="proj-form-actions">
+            <button class="btn btn-ghost" onclick="closeProjAddForm()">취소</button>
+            <button class="btn btn-primary" onclick="saveProjForm()">저장</button>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="proj-add-btn" onclick="openProjAddForm(null)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            새 프로젝트 추가
+          </button>
+        </div>
+        <div id="projList" class="proj-list">
+          <div class="proj-empty">프로젝트가 없습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 토스트 -->
   <div id="toast"></div>
 
   <script>
+    /* ===================== 프로젝트 전역 상태 ===================== */
+    let _currentProject = null; // { id, name, description, start_date, end_date }
+    const GEN_PROJECT_KEY = 'WBS_GEN_CURRENT_PROJECT_ID';
+    let _authCallback = null; // requireAuthThen 용 콜백
+
     /* ===================== Supabase 클라우드 연동 유틸 ===================== */
     let _supabaseClient = null;
 
@@ -2768,73 +2899,15 @@
     let WBS_DATA = DEFAULT_WBS_DATA;
     let CURRENT_SOURCE_NAME = "";
 
-    // Legacy Storage implementation retained for backwards compatibility; new saves do not call it.
-    function supabaseAddOrUpdateLegacy(record, existingId = null) {
-      const client = getSupabaseClient();
-      if (!client) return Promise.reject(new Error("Supabase not connected"));
-
-      const bucketName = 'wbs-files';
-      const filePath = `${record.wbsDate}/${record.fileName}`;
-      const storageUri = `storage://${bucketName}/${filePath}`;
-
-      let uploadPromise = Promise.resolve(storageUri);
-
-      if (record.fileData) {
-        const blob = new Blob([record.fileData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        uploadPromise = client.storage
-          .from(bucketName)
-          .upload(filePath, blob, {
-            cacheControl: '3600',
-            upsert: true
-          })
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Supabase Storage upload error:", error);
-              throw error;
-            }
-            return storageUri;
-          });
-      } else {
-        uploadPromise = Promise.resolve(null);
-      }
-
-      return uploadPromise.then(finalPath => {
-        const dbRecord = {
-          wbs_date: record.wbsDate,
-          file_name: record.fileName,
-          file_data: finalPath,
-          tasks: record.tasks,
-          summary: record.summary,
-          saved_at: record.savedAt
-        };
-
-        if (existingId) {
-          return client.from('wbs_analyses').update(dbRecord).eq('id', existingId).select('id')
-            .then(({ data, error }) => {
-              if (error) throw error;
-              if (data && data.length > 0) return data[0].id;
-              return client.from('wbs_analyses').insert(dbRecord).select('id').then(({ data: insData, error: insErr }) => {
-                if (insErr) throw insErr;
-                return insData[0].id;
-              });
-            });
-        } else {
-          return client.from('wbs_analyses').insert(dbRecord).select('id')
-            .then(({ data, error }) => {
-              if (error) throw error;
-              return data[0].id;
-            });
-        }
-      });
-    }
+    /* === wbs_gen_analyses 기반 저장/조회 (프로젝트 범용) === */
 
     function supabaseAddOrUpdate(record, existingId = null) {
+      if (!_currentProject) return Promise.reject(new Error('프로젝트를 먼저 선택하세요.'));
       const client = getSupabaseClient();
       if (!client) return Promise.reject(new Error('Supabase not connected'));
 
-      // Small Excel workbooks are stored with the analysis record itself, avoiding
-      // a separate Storage upload and making the saved result self-contained.
       const dbRecord = {
+        project_id: _currentProject.id,
         wbs_date: record.wbsDate,
         file_name: record.fileName,
         file_data: record.fileData ? arrayBufferToBase64(record.fileData) : null,
@@ -2844,15 +2917,13 @@
       };
 
       const save = existingId
-        ? client.from('wbs_analyses').update(dbRecord).eq('id', existingId).select('id')
-        : client.from('wbs_analyses').insert(dbRecord).select('id');
+        ? client.from('wbs_gen_analyses').update(dbRecord).eq('id', existingId).select('id')
+        : client.from('wbs_gen_analyses').insert(dbRecord).select('id');
 
       return save.then(({ data, error }) => {
         if (error) throw error;
         if (data && data.length > 0) return data[0].id;
-
-        // The selected record may have been removed by another user. Create it again.
-        return client.from('wbs_analyses').insert(dbRecord).select('id').then(({ data: inserted, error: insertError }) => {
+        return client.from('wbs_gen_analyses').insert(dbRecord).select('id').then(({ data: inserted, error: insertError }) => {
           if (insertError) throw insertError;
           return inserted[0].id;
         });
@@ -2860,37 +2931,24 @@
     }
 
     function getCombinedHistoryList() {
+      if (!_currentProject) return Promise.resolve([]);
       const client = getSupabaseClient();
       if (!client) {
-        return dbGetAll();
+        return genDbGetAll().then(all => all.filter(r => r.project_id === _currentProject.id));
       }
-      
-      return client.from('wbs_analyses').select('id, saved_at, wbs_date, file_name, summary').order('id', { ascending: false })
+      return client.from('wbs_gen_analyses')
+        .select('id, saved_at, wbs_date, file_name, summary')
+        .eq('project_id', _currentProject.id)
+        .order('id', { ascending: false })
         .then(({ data, error }) => {
           if (error) {
-            console.error("Supabase select error:", error);
-            return dbGetAll();
+            console.error('Supabase gen_analyses select error:', error);
+            return genDbGetAll().then(all => all.filter(r => r.project_id === _currentProject.id));
           }
-          
-          const cloudList = (data || []).map(row => ({
-            id: row.id,
-            savedAt: row.saved_at,
-            wbsDate: row.wbs_date,
-            fileName: row.file_name,
-            summary: row.summary
+          return (data || []).map(row => ({
+            id: row.id, savedAt: row.saved_at, wbsDate: row.wbs_date,
+            fileName: row.file_name, summary: row.summary
           }));
-          
-          return dbGetAll().then(localList => {
-            const localMap = new Map(localList.map(r => [r.id, r]));
-            cloudList.forEach(r => {
-              const localRec = localMap.get(r.id);
-              if (localRec && localRec.fileData) {
-                r.fileData = localRec.fileData;
-                r.tasks = localRec.tasks;
-              }
-            });
-            return cloudList;
-          });
         });
     }
 
@@ -2930,7 +2988,8 @@
 
     function isDelayByDate(t) {
       const end = parseDate(t.end);
-      return !!(end && !isDone(t) && TODAY >= end);
+      // 기준일 당일 마감 업무는 "진행중"으로 처리 (당일 자정 이후로 넘겨야 지연)
+      return !!(end && !isDone(t) && TODAY > end);
     }
 
     function taskStatus(t) {
@@ -3285,10 +3344,13 @@
       document.getElementById('todayLabel').textContent = fmt(TODAY) + ' (' + ['일', '월', '화', '수', '목', '금', '토'][TODAY.getDay()] + ')';
       document.getElementById('srcTag').textContent = '데이터 출처: ' + CURRENT_SOURCE_NAME;
 
-      const projStart = parseDate('2026-05-28');
-      const projEnd = parseDate('2027-01-29');
-      const dday = Math.round((projEnd - TODAY) / 86400000);
-      document.getElementById('ddayLabel').textContent = dday >= 0 ? `사업종료 D-${dday}` : `사업종료 D+${-dday}`;
+      const projEnd = _currentProject && _currentProject.end_date ? parseDate(_currentProject.end_date) : null;
+      if (projEnd) {
+        const dday = Math.round((projEnd - TODAY) / 86400000);
+        document.getElementById('ddayLabel').textContent = dday >= 0 ? `사업종료 D-${dday}` : `사업종료 D+${-dday}`;
+      } else {
+        document.getElementById('ddayLabel').textContent = 'D-?';
+      }
 
       const thisLabel = `${fmtShort(wMon)} ~ ${fmtShort(wSun)}`;
       const nextLabel = `${fmtShort(nMon)} ~ ${fmtShort(nFri)}`;
@@ -3369,17 +3431,28 @@
     let _authed = false;
     let _pendingPage = '';
 
+    function _openAuthModal(desc) {
+      document.getElementById('authCardDesc').textContent = desc || '관리자 확인 후 이용할 수 있습니다.';
+      document.getElementById('authOverlay').classList.add('open');
+      const inp = document.getElementById('authPwInput');
+      inp.type = 'password'; inp.value = '';
+      const error = document.getElementById('authError');
+      error.textContent = ''; error.classList.remove('show');
+      setTimeout(() => inp.focus(), 80);
+    }
+
     function requireAuth(pageId) {
       if (!PROTECTED_PAGES.has(pageId) || _authed) { navigateTo(pageId); return; }
       _pendingPage = pageId;
-      document.getElementById('authOverlay').classList.add('open');
-      const inp = document.getElementById('authPwInput');
-      inp.type = 'password';
-      inp.value = '';
-      const error = document.getElementById('authError');
-      error.textContent = '';
-      error.classList.remove('show');
-      setTimeout(() => inp.focus(), 80);
+      _authCallback = null;
+      _openAuthModal('구성원 관리와 메일 보내기 메뉴는 관리자 확인 후 이용할 수 있습니다.');
+    }
+
+    function requireAuthThen(callback, desc) {
+      if (_authed) { callback(); return; }
+      _pendingPage = '';
+      _authCallback = callback;
+      _openAuthModal(desc || '이 기능은 관리자 확인 후 이용할 수 있습니다.');
     }
 
     function submitAuth() {
@@ -3387,14 +3460,14 @@
       if (val === '4343') {
         _authed = true;
         closeAuthModal();
-        navigateTo(_pendingPage);
+        if (_authCallback) { const fn = _authCallback; _authCallback = null; fn(); }
+        else if (_pendingPage) navigateTo(_pendingPage);
       } else {
         const error = document.getElementById('authError');
         error.textContent = '비밀번호가 올바르지 않습니다. 다시 입력해 주세요.';
         error.classList.add('show');
         const inp = document.getElementById('authPwInput');
-        inp.value = '';
-        inp.focus();
+        inp.value = ''; inp.focus();
       }
     }
 
@@ -3508,22 +3581,18 @@
       });
     }
 
-    // IndexedDB 우선, 없으면 Supabase에서 tasks 포함 전체 레코드 fetch
+    // GenDB 우선, 없으면 Supabase에서 tasks 포함 전체 레코드 fetch
     function fetchFullRecord(id) {
-      return dbGet(id).then(local => {
+      return genDbGet(id).then(local => {
         if (local && local.tasks) return local;
         const client = getSupabaseClient();
         if (!client) return local || null;
-        return client.from('wbs_analyses').select('*').eq('id', id).maybeSingle()
+        return client.from('wbs_gen_analyses').select('*').eq('id', id).maybeSingle()
           .then(({ data, error }) => {
             if (error || !data) return local || null;
             return {
-              id: data.id,
-              savedAt: data.saved_at,
-              wbsDate: data.wbs_date,
-              fileName: data.file_name,
-              tasks: data.tasks,
-              summary: data.summary
+              id: data.id, savedAt: data.saved_at, wbsDate: data.wbs_date,
+              fileName: data.file_name, tasks: data.tasks, summary: data.summary
             };
           });
       });
@@ -3832,7 +3901,7 @@
 
     function parseWbsWorkbook(workbook) {
       const planName = workbook.SheetNames.find(n => n.includes('계획')) || workbook.SheetNames[0];
-      const actName  = workbook.SheetNames.find(n => n.includes('실적'));
+      const actName  = workbook.SheetNames.find(n => n.includes('실적') || n.includes('실행'));
 
       const ws   = workbook.Sheets[planName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, cellDates: true });
@@ -4012,144 +4081,62 @@
       }));
     }
 
-    /* === Members store (MSTORE) helpers === */
+    /* === wbs_gen_members 기반 구성원 CRUD (프로젝트 범용) === */
     function mdbGetAll() {
+      if (!_currentProject) return Promise.resolve([]);
       const client = getSupabaseClient();
       if (!client) {
-        return initDB().then(d => new Promise((resolve, reject) => {
-          const req = d.transaction(MSTORE, 'readonly').objectStore(MSTORE).getAll();
-          req.onsuccess = e => resolve(e.target.result);
-          req.onerror = e => reject(e.target.error);
-        }));
+        return genMembersDbGetAll().then(all => all.filter(r => r.project_id === _currentProject.id));
       }
-
-      return client.from('wbs_members').select('*').order('name', { ascending: true })
+      return client.from('wbs_gen_members').select('*')
+        .eq('project_id', _currentProject.id).order('name', { ascending: true })
         .then(({ data, error }) => {
           if (error) {
-            console.error("Supabase members select error:", error);
-            // Local fallback
-            return initDB().then(d => new Promise((resolve, reject) => {
-              const req = d.transaction(MSTORE, 'readonly').objectStore(MSTORE).getAll();
-              req.onsuccess = e => resolve(e.target.result);
-              req.onerror = e => reject(e.target.error);
-            }));
+            console.error('Supabase gen_members select error:', error);
+            return genMembersDbGetAll().then(all => all.filter(r => r.project_id === _currentProject.id));
           }
-
-          const cloudList = (data || []).map(row => ({
-            id: row.id,
-            name: row.name,
-            role: row.role,
-            email: row.email,
-            phone: row.phone,
-            title: row.title,
-            createdAt: row.created_at
-          }));
-
-          // Sync cache to IndexedDB
-          return initDB().then(d => new Promise((resolve) => {
-            const tx = d.transaction(MSTORE, 'readwrite');
-            const store = tx.objectStore(MSTORE);
-            store.clear().onsuccess = () => {
-              if (cloudList.length === 0) {
-                resolve(cloudList);
-                return;
-              }
-              let count = 0;
-              cloudList.forEach(m => {
-                store.put(m).onsuccess = () => {
-                  count++;
-                  if (count === cloudList.length) resolve(cloudList);
-                };
-              });
-            };
-            tx.oncomplete = () => resolve(cloudList);
-            tx.onerror = () => resolve(cloudList);
+          return (data || []).map(row => ({
+            id: row.id, name: row.name, role: row.role, email: row.email,
+            phone: row.phone, title: row.title, createdAt: row.created_at
           }));
         });
     }
+
     function mdbAdd(record) {
+      if (!_currentProject) return Promise.reject(new Error('프로젝트를 먼저 선택하세요.'));
       const client = getSupabaseClient();
-      if (!client) {
-        return initDB().then(d => new Promise((resolve, reject) => {
-          const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).add(record);
-          req.onsuccess = e => resolve(e.target.result);
-          req.onerror = e => reject(e.target.error);
-        }));
-      }
-
       const dbRecord = {
-        name: record.name,
-        role: record.role,
-        email: record.email,
-        phone: record.phone,
-        title: record.title,
-        created_at: record.createdAt
+        project_id: _currentProject.id,
+        name: record.name, role: record.role, email: record.email,
+        phone: record.phone, title: record.title, created_at: record.createdAt
       };
-
-      return client.from('wbs_members').insert(dbRecord).select('id')
-        .then(({ data, error }) => {
-          if (error) throw error;
-          const newId = data[0].id;
-          const cachedRecord = Object.assign({}, record, { id: newId });
-          // Save to IndexedDB cache
-          return initDB().then(d => new Promise((resolve, reject) => {
-            const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).put(cachedRecord);
-            req.onsuccess = () => resolve(newId);
-            req.onerror = e => reject(e.target.error);
-          }));
-        });
+      if (!client) {
+        return genMembersDbAdd(Object.assign({}, record, { project_id: _currentProject.id }));
+      }
+      return client.from('wbs_gen_members').insert(dbRecord).select('id')
+        .then(({ data, error }) => { if (error) throw error; return data[0].id; });
     }
+
     function mdbPut(id, record) {
       const client = getSupabaseClient();
-      if (!client) {
-        return initDB().then(d => new Promise((resolve, reject) => {
-          const rec = Object.assign({}, record, { id });
-          const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).put(rec);
-          req.onsuccess = () => resolve(id);
-          req.onerror = e => reject(e.target.error);
-        }));
-      }
-
       const dbRecord = {
-        name: record.name,
-        role: record.role,
-        email: record.email,
-        phone: record.phone,
-        title: record.title,
-        created_at: record.createdAt
+        name: record.name, role: record.role, email: record.email,
+        phone: record.phone, title: record.title, created_at: record.createdAt
       };
-
-      return client.from('wbs_members').update(dbRecord).eq('id', id).select('id')
-        .then(({ data, error }) => {
-          if (error) throw error;
-          const cachedRecord = Object.assign({}, record, { id });
-          // Save to IndexedDB cache
-          return initDB().then(d => new Promise((resolve, reject) => {
-            const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).put(cachedRecord);
-            req.onsuccess = () => resolve(id);
-            req.onerror = e => reject(e.target.error);
-          }));
-        });
+      if (!client) {
+        return genMemberDbPut(id, Object.assign({}, record, { project_id: _currentProject?.id }));
+      }
+      return client.from('wbs_gen_members').update(dbRecord).eq('id', id).select('id')
+        .then(({ data, error }) => { if (error) throw error; return id; });
     }
+
     function mdbDelete(id) {
       const client = getSupabaseClient();
       if (!client) {
-        return initDB().then(d => new Promise((resolve, reject) => {
-          const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).delete(id);
-          req.onsuccess = () => resolve();
-          req.onerror = e => reject(e.target.error);
-        }));
+        return genMemberDbDelete(id);
       }
-
-      return client.from('wbs_members').delete().eq('id', id)
-        .then(({ error }) => {
-          if (error) throw error;
-          return initDB().then(d => new Promise((resolve, reject) => {
-            const req = d.transaction(MSTORE, 'readwrite').objectStore(MSTORE).delete(id);
-            req.onsuccess = () => resolve();
-            req.onerror = e => reject(e.target.error);
-          }));
-        });
+      return client.from('wbs_gen_members').delete().eq('id', id)
+        .then(({ error }) => { if (error) throw error; });
     }
 
     function dbClear() {
@@ -4227,22 +4214,20 @@
           
           showToast('클라우드에 저장하는 중...', 'info');
           supabaseAddOrUpdate(record, existingId).then(globalId => {
-            dbUpdate(globalId, record).then(() => {
-              showToast('✔ 클라우드 및 로컬 저장 완료!', 'ok');
-              updateHistoryCount();
-              populateFileSelect(globalId);
-              renderHistoryPage();
-              updateUrlParam(globalId);
-            }).catch(err => showToast('로컬 캐시 저장 오류: ' + err.message, 'err'));
+            genDbUpdate(globalId, Object.assign({}, record, { project_id: _currentProject?.id })).catch(() => {});
+            showToast('✔ 클라우드 저장 완료!', 'ok');
+            updateHistoryCount();
+            populateFileSelect(globalId);
+            renderHistoryPage();
+            updateUrlParam(globalId);
           }).catch(err => {
             console.error('클라우드 저장 오류:', err);
-            // 클라우드 설정/권한 문제로 저장이 실패해도 사용자가 만든 분석 결과는
-            // 브라우저에 남겨서 조회와 재시도가 가능하도록 한다.
-            dbGetAll().then(localAll => {
-              const localExisting = localAll.find(r => r.fileName === CURRENT_SOURCE_NAME);
-              const saveLocal = localExisting ? dbUpdate(localExisting.id, record) : dbAdd(record);
+            genDbGetAll().then(localAll => {
+              const localExisting = localAll.find(r => r.fileName === CURRENT_SOURCE_NAME && r.project_id === _currentProject?.id);
+              const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id });
+              const saveLocal = localExisting ? genDbUpdate(localExisting.id, recWithPid) : genDbAdd(recWithPid);
               return saveLocal.then(id => {
-                showToast('클라우드 저장에 실패하여 이 브라우저에 저장했습니다: ' + err.message, '');
+                showToast('클라우드 저장 실패 — 브라우저에만 저장됨: ' + err.message, '');
                 updateHistoryCount();
                 populateFileSelect(id);
                 renderHistoryPage();
@@ -4252,11 +4237,12 @@
           });
         });
       } else {
-        dbGetAll().then(all => {
-          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
+        genDbGetAll().then(all => {
+          const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && r.project_id === _currentProject?.id);
+          const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id });
           if (existing) {
             if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
-            dbUpdate(existing.id, record).then(id => {
+            genDbUpdate(existing.id, recWithPid).then(id => {
               showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
               updateHistoryCount();
               populateFileSelect(id);
@@ -4264,7 +4250,7 @@
               updateUrlParam(id);
             }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
           } else {
-            dbAdd(record).then(id => {
+            genDbAdd(recWithPid).then(id => {
               showToast('✔ 로컬 저장 완료 (클라우드 미연동)', 'ok');
               updateHistoryCount();
               populateFileSelect(id);
@@ -4330,7 +4316,7 @@
           
           const testClient = getSupabaseClient();
           if (testClient) {
-            testClient.from('wbs_analyses').select('id').limit(1).then(({ error }) => {
+            testClient.from('wbs_gen_projects').select('id').limit(1).then(({ error }) => {
               if (error) {
                 showToast('연동 실패: ' + error.message, 'err');
                 localStorage.removeItem('WBS_SUPABASE_URL');
@@ -4724,66 +4710,30 @@
     }
 
     function restoreAnalysis(id) {
-      dbGet(id).then(r => {
-        if (r) {
+      genDbGet(id).then(r => {
+        if (r && r.tasks) {
           loadAnalysisRecord(r, id);
         } else {
           const client = getSupabaseClient();
           if (client) {
             showToast('클라우드에서 데이터를 불러오는 중...', 'info');
-            client.from('wbs_analyses').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
+            client.from('wbs_gen_analyses').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
               if (error) throw error;
-              if (!data) {
-                showToast('저장 레코드를 찾을 수 없습니다.', 'err');
+              if (!data) { showToast('저장 레코드를 찾을 수 없습니다.', 'err'); return; }
+              if (_currentProject && data.project_id !== _currentProject.id) {
+                updateUrlParam(null);
+                navigateTo('p-upload');
                 return;
               }
-              
-              let fileDataPromise = Promise.resolve(null);
-              if (data.file_data) {
-                if (data.file_data.startsWith('storage://')) {
-                  const parts = data.file_data.replace('storage://', '').split('/');
-                  const bucket = parts[0];
-                  const path = parts.slice(1).join('/');
-                  fileDataPromise = client.storage.from(bucket).download(path)
-                    .then(({ data: blob, error: dlErr }) => {
-                      if (dlErr) throw dlErr;
-                      return blob.arrayBuffer();
-                    });
-                } else {
-                  fileDataPromise = Promise.resolve(base64ToArrayBuffer(data.file_data));
-                }
-              }
-
-              fileDataPromise.then(arrayBuffer => {
-                const record = {
-                  id: data.id,
-                  savedAt: data.saved_at,
-                  wbsDate: data.wbs_date,
-                  fileName: data.file_name,
-                  fileData: arrayBuffer,
-                  tasks: data.tasks,
-                  summary: data.summary
-                };
-                dbUpdate(data.id, record).then(() => {
-                  loadAnalysisRecord(record, data.id);
-                  updateHistoryCount();
-                  populateFileSelect(data.id);
-                }).catch(() => {
-                  loadAnalysisRecord(record, data.id);
-                });
-              }).catch(err => {
-                console.error("Storage file download error:", err);
-                const record = {
-                  id: data.id,
-                  savedAt: data.saved_at,
-                  wbsDate: data.wbs_date,
-                  fileName: data.file_name,
-                  fileData: null,
-                  tasks: data.tasks,
-                  summary: data.summary
-                };
-                loadAnalysisRecord(record, data.id);
-              });
+              const fileData = data.file_data ? base64ToArrayBuffer(data.file_data) : null;
+              const record = {
+                id: data.id, savedAt: data.saved_at, wbsDate: data.wbs_date,
+                fileName: data.file_name, fileData, tasks: data.tasks, summary: data.summary
+              };
+              genDbUpdate(data.id, record).catch(() => {});
+              loadAnalysisRecord(record, data.id);
+              updateHistoryCount();
+              populateFileSelect(data.id);
             }).catch(err => showToast('클라우드 불러오기 오류: ' + err.message, 'err'));
           } else {
             showToast('저장 레코드를 찾을 수 없습니다 (클라우드 미연동).', 'err');
@@ -4819,38 +4769,19 @@
     }
 
     function downloadAnalysisFile(id) {
-      dbGet(id).then(r => {
+      genDbGet(id).then(r => {
         if (r && r.fileData) {
           triggerFileDownload(r.fileName, r.fileData);
         } else {
           const client = getSupabaseClient();
           if (client) {
             showToast('클라우드에서 파일 데이터를 가져오는 중...', 'info');
-            client.from('wbs_analyses').select('file_name, file_data').eq('id', id).maybeSingle().then(({ data, error }) => {
-              if (error) throw error;
-              if (!data || !data.file_data) {
-                showToast('저장된 파일 데이터가 없습니다.', 'err');
-                return;
-              }
-
-              let fileDataPromise = Promise.resolve(null);
-              if (data.file_data.startsWith('storage://')) {
-                const parts = data.file_data.replace('storage://', '').split('/');
-                const bucket = parts[0];
-                const path = parts.slice(1).join('/');
-                fileDataPromise = client.storage.from(bucket).download(path)
-                  .then(({ data: blob, error: dlErr }) => {
-                    if (dlErr) throw dlErr;
-                    return blob.arrayBuffer();
-                  });
-              } else {
-                fileDataPromise = Promise.resolve(base64ToArrayBuffer(data.file_data));
-              }
-
-              fileDataPromise.then(buffer => {
-                triggerFileDownload(data.file_name, buffer);
-              }).catch(err => showToast('파일 다운로드 실패: ' + err.message, 'err'));
-            }).catch(err => showToast('다운로드 오류: ' + err.message, 'err'));
+            client.from('wbs_gen_analyses').select('file_name, file_data').eq('id', id).maybeSingle()
+              .then(({ data, error }) => {
+                if (error) throw error;
+                if (!data || !data.file_data) { showToast('저장된 파일 데이터가 없습니다.', 'err'); return; }
+                triggerFileDownload(data.file_name, base64ToArrayBuffer(data.file_data));
+              }).catch(err => showToast('다운로드 오류: ' + err.message, 'err'));
           } else {
             showToast('저장된 파일 데이터가 없습니다.', 'err');
           }
@@ -4870,32 +4801,274 @@
     }
 
     function deleteAnalysis(id) {
-      dbGet(id).then(r => {
+      genDbGet(id).then(r => {
         const labelName = r ? `"${r.fileName}" (기준일 ${r.wbsDate})` : `ID ${id}번 레코드`;
         if (!confirm(`${labelName} 저장 결과를 삭제하시겠습니까?`)) return;
-
         const client = getSupabaseClient();
+        const doDelete = () => {
+          genDbDelete(id).catch(() => {});
+          showToast('삭제되었습니다.', '');
+          updateHistoryCount();
+          populateFileSelect();
+          renderHistoryPage();
+        };
         if (client) {
           showToast('클라우드에서 삭제 중...', 'info');
-          client.from('wbs_analyses').delete().eq('id', id).then(({ error }) => {
-            if (error) throw error;
-            dbDelete(id).then(() => {
-              showToast('삭제되었습니다.', '');
-              updateHistoryCount();
-              populateFileSelect();
-              renderHistoryPage();
-            }).catch(err => showToast('로컬 캐시 삭제 오류: ' + err.message, 'err'));
-          }).catch(err => showToast('클라우드 삭제 오류: ' + err.message, 'err'));
+          client.from('wbs_gen_analyses').delete().eq('id', id)
+            .then(({ error }) => { if (error) throw error; doDelete(); })
+            .catch(err => showToast('클라우드 삭제 오류: ' + err.message, 'err'));
         } else {
-          dbDelete(id).then(() => {
-            showToast('삭제되었습니다.', '');
-            updateHistoryCount();
-            populateFileSelect();
-            renderHistoryPage();
-          }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
+          doDelete();
         }
       });
     }
+
+    /* ===================== Gen IndexedDB (로컬 캐시) ===================== */
+    const GEN_DB_NAME = 'WbsGenDB', GEN_DB_VER = 1;
+    let _genDb = null;
+
+    function initGenDB() {
+      return new Promise((resolve, reject) => {
+        if (_genDb) { resolve(_genDb); return; }
+        const req = indexedDB.open(GEN_DB_NAME, GEN_DB_VER);
+        req.onupgradeneeded = e => {
+          const d = e.target.result;
+          if (!d.objectStoreNames.contains('gen_analyses')) {
+            const s = d.createObjectStore('gen_analyses', { keyPath: 'id', autoIncrement: true });
+            s.createIndex('project_id', 'project_id', { unique: false });
+          }
+          if (!d.objectStoreNames.contains('gen_members')) {
+            const s = d.createObjectStore('gen_members', { keyPath: 'id', autoIncrement: true });
+            s.createIndex('project_id', 'project_id', { unique: false });
+          }
+        };
+        req.onsuccess = e => { _genDb = e.target.result; resolve(_genDb); };
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
+    function genDbGet(id) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_analyses', 'readonly').objectStore('gen_analyses').get(id);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genDbGetAll() {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_analyses', 'readonly').objectStore('gen_analyses').getAll();
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genDbAdd(record) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_analyses', 'readwrite').objectStore('gen_analyses').add(record);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genDbUpdate(id, record) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const rec = Object.assign({}, record, { id });
+        const req = d.transaction('gen_analyses', 'readwrite').objectStore('gen_analyses').put(rec);
+        req.onsuccess = () => resolve(id);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genDbDelete(id) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_analyses', 'readwrite').objectStore('gen_analyses').delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genMembersDbGetAll() {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_members', 'readonly').objectStore('gen_members').getAll();
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genMembersDbAdd(record) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_members', 'readwrite').objectStore('gen_members').add(record);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genMemberDbPut(id, record) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const rec = Object.assign({}, record, { id });
+        const req = d.transaction('gen_members', 'readwrite').objectStore('gen_members').put(rec);
+        req.onsuccess = () => resolve(id);
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+    function genMemberDbDelete(id) {
+      return initGenDB().then(d => new Promise((resolve, reject) => {
+        const req = d.transaction('gen_members', 'readwrite').objectStore('gen_members').delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = e => reject(e.target.error);
+      }));
+    }
+
+    /* ===================== 프로젝트 관리 ===================== */
+    function onClickProjectSwitch() {
+      requireAuthThen(openProjectModal, '프로젝트 전환은 관리자만 가능합니다.');
+    }
+
+    function openProjectModal() {
+      document.getElementById('projOverlay').classList.add('open');
+      renderProjectList();
+    }
+
+    function closeProjModal() {
+      document.getElementById('projOverlay').classList.remove('open');
+      closeProjAddForm();
+    }
+
+    function openProjAddForm(editData) {
+      document.getElementById('projAddFormTitle').textContent = editData ? '프로젝트 수정' : '새 프로젝트 추가';
+      document.getElementById('pfEditId').value = editData ? editData.id : '';
+      document.getElementById('pfName').value = editData ? (editData.name || '') : '';
+      document.getElementById('projAddForm').classList.add('open');
+      setTimeout(() => document.getElementById('pfName').focus(), 50);
+    }
+
+    function closeProjAddForm() {
+      document.getElementById('projAddForm').classList.remove('open');
+    }
+
+    function saveProjForm() {
+      const name = document.getElementById('pfName').value.trim();
+      if (!name) { showToast('프로젝트명을 입력하세요.', 'err'); document.getElementById('pfName').focus(); return; }
+      const editId = document.getElementById('pfEditId').value;
+      const record = { name };
+      const client = getSupabaseClient();
+      if (!client) { showToast('Supabase 연결이 필요합니다.', 'err'); return; }
+
+      const promise = editId
+        ? client.from('wbs_gen_projects').update(record).eq('id', Number(editId)).select().single()
+        : client.from('wbs_gen_projects').insert(record).select().single();
+
+      promise.then(({ data, error }) => {
+        if (error) throw error;
+        if (!data) throw new Error('저장된 데이터를 가져오지 못했습니다.');
+        showToast(editId ? '프로젝트가 수정되었습니다.' : '프로젝트가 추가되었습니다.', 'ok');
+        closeProjAddForm();
+        if (!editId) {
+          selectProject(Array.isArray(data) ? data[0] : data);
+        } else {
+          const row = Array.isArray(data) ? data[0] : data;
+          if (_currentProject && row && _currentProject.id === row.id) {
+            _currentProject = row;
+            updateProjectUI();
+          }
+          renderProjectList();
+        }
+      }).catch(err => {
+        const msg = err?.message || String(err);
+        if (msg.includes('does not exist') || msg.includes('relation')) {
+          showToast('Supabase 테이블이 없습니다. supabase_setup_gen.sql 을 실행하세요.', 'err');
+        } else {
+          showToast('저장 오류: ' + msg, 'err');
+        }
+      });
+    }
+
+    function selectProject(project) {
+      _currentProject = project;
+      localStorage.setItem(GEN_PROJECT_KEY, String(project.id));
+      updateUrlParam(null); // 다른 프로젝트의 ?id= 파라미터 제거
+      updateProjectUI();
+      closeProjModal();
+      WBS_DATA = []; CURRENT_SOURCE_NAME = ''; CURRENT_FILE_BUFFER = null;
+      TODAY = startOfDay(new Date());
+      initFilters(); renderAll();
+      updateHistoryCount(); populateFileSelect(); renderMembersPage();
+      getCombinedHistoryList().then(all => {
+        const latest = all
+          .filter(r => r.wbsDate && parseDate(r.wbsDate))
+          .sort((a, b) => b.wbsDate.localeCompare(a.wbsDate))[0];
+        if (latest) restoreAnalysis(latest.id);
+        else navigateTo('p-upload');
+      }).catch(() => navigateTo('p-upload'));
+    }
+
+    function updateProjectUI() {
+      const name = _currentProject ? _currentProject.name : '프로젝트 미선택';
+      const el = document.getElementById('sidebarProjectName');
+      if (el) el.textContent = name;
+      const h1 = document.getElementById('topbarProjectName');
+      if (h1) h1.textContent = _currentProject ? `${_currentProject.name} — WBS 일정 분석` : 'WBS 일정 분석';
+      document.title = _currentProject ? `${_currentProject.name} | WBS 일정 분석` : 'WBS 일정 분석';
+    }
+
+    function renderProjectList() {
+      const client = getSupabaseClient();
+      if (!client) {
+        document.getElementById('projList').innerHTML = '<div class="proj-empty">Supabase 연결이 필요합니다.</div>';
+        return;
+      }
+      document.getElementById('projList').innerHTML = '<div class="proj-empty" style="color:var(--text-muted);font-size:13px;">불러오는 중...</div>';
+      client.from('wbs_gen_projects').select('*').order('name').then(({ data, error }) => {
+        if (error) {
+          const m = error?.message || String(error);
+          if (m.includes('does not exist') || m.includes('relation')) {
+            document.getElementById('projList').innerHTML = '<div class="proj-empty" style="color:var(--red)">⚠ Supabase 테이블 없음<br>Supabase SQL Editor에서<br><b>supabase_setup_gen.sql</b>을 실행하세요.</div>';
+          } else {
+            showToast('프로젝트 목록 오류: ' + m, 'err');
+          }
+          return;
+        }
+        const list = data || [];
+        if (list.length === 0) {
+          document.getElementById('projList').innerHTML = '<div class="proj-empty">등록된 프로젝트가 없습니다.<br>위의 <b>새 프로젝트 추가</b>를 눌러 시작하세요.</div>';
+          return;
+        }
+        document.getElementById('projList').innerHTML = list.map(p => {
+          const isActive = _currentProject && _currentProject.id === p.id;
+          const dates = (p.start_date || p.end_date) ? `${p.start_date || '?'} ~ ${p.end_date || '?'}` : '';
+          const escapedP = JSON.stringify(p).replace(/"/g, '&quot;');
+          return `<div class="proj-card${isActive ? ' current-proj' : ''}">
+            <div class="proj-card-info">
+              <div class="proj-card-name">${p.name}</div>
+              ${p.description ? `<div class="proj-card-desc">${p.description}</div>` : ''}
+              ${dates ? `<div class="proj-card-dates">${dates}</div>` : ''}
+            </div>
+            <div class="proj-card-actions">
+              ${isActive
+                ? '<span class="proj-current-badge">현재 선택</span>'
+                : `<button class="btn btn-primary" style="min-height:30px;padding:0 12px;font-size:12px" onclick="selectProject(JSON.parse(this.dataset.p))" data-p="${escapedP}">선택</button>`
+              }
+              <button class="btn-m-edit" onclick="openProjAddForm(JSON.parse(this.dataset.p))" data-p="${escapedP}">수정</button>
+              <button class="btn-m-del" onclick="deleteProjConfirm(${p.id},'${p.name.replace(/'/g,"\\'")}')">삭제</button>
+            </div>
+          </div>`;
+        }).join('');
+      });
+    }
+
+    function deleteProjConfirm(id, name) {
+      if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?\n⚠️ 이 프로젝트의 모든 구성원과 WBS 분석 결과도 함께 삭제됩니다.`)) return;
+      const client = getSupabaseClient();
+      if (!client) { showToast('Supabase 연결이 필요합니다.', 'err'); return; }
+      client.from('wbs_gen_projects').delete().eq('id', id).then(({ error }) => {
+        if (error) { showToast('삭제 오류: ' + error.message, 'err'); return; }
+        showToast('프로젝트가 삭제되었습니다.', '');
+        if (_currentProject && _currentProject.id === id) {
+          _currentProject = null;
+          localStorage.removeItem(GEN_PROJECT_KEY);
+          updateProjectUI();
+        }
+        renderProjectList();
+      });
+    }
+
+    document.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape' && document.getElementById('projOverlay').classList.contains('open')) closeProjModal();
+    });
 
     const uploadZone = document.getElementById('uploadZone');
     const fileInput = document.getElementById('fileInput');
@@ -4917,34 +5090,64 @@
 
     /* ===================== 초기 실행 ===================== */
     initFilters();
+    updateProjectUI();
     renderAll();
-    initDB().then(() => {
+
+    Promise.all([initDB(), initGenDB()]).then(() => {
       updateSupabaseStatus();
       initSupabaseEvents();
-      updateHistoryCount();
-      populateFileSelect();
-      renderMembersPage();
-      const initId = new URLSearchParams(window.location.search).get('id');
-      if (initId) {
-        restoreAnalysis(Number(initId));
-      } else {
-        // 최초 진입 시에는 저장된 WBS 중 Today(기준일)가 가장 최근인 파일을 기본으로 불러옵니다.
-        // 같은 기준일이 여러 건이면 가장 나중에 저장한 파일을 선택합니다.
-        getCombinedHistoryList().then(all => {
-          const latest = all
-            .filter(r => r.wbsDate && parseDate(r.wbsDate))
-            .sort((a, b) => {
-              const byWbsDate = b.wbsDate.localeCompare(a.wbsDate);
-              return byWbsDate || String(b.savedAt || '').localeCompare(String(a.savedAt || ''));
-            })[0];
-          if (latest) restoreAnalysis(latest.id);
-          else if (WBS_DATA.length === 0) navigateTo('p-upload');
+
+      const savedProjId = localStorage.getItem(GEN_PROJECT_KEY);
+      if (savedProjId) {
+        const client = getSupabaseClient();
+        const load = client
+          ? client.from('wbs_gen_projects').select('*').eq('id', Number(savedProjId)).single()
+              .then(({ data, error }) => { if (error || !data) throw new Error('not found'); return data; })
+          : Promise.reject(new Error('no client'));
+
+        load.then(proj => {
+          _currentProject = proj;
+          updateProjectUI();
+          updateHistoryCount();
+          populateFileSelect();
+          renderMembersPage();
+          const initId = new URLSearchParams(window.location.search).get('id');
+          const doLoadLatest = () => getCombinedHistoryList().then(all => {
+            const latest = all
+              .filter(r => r.wbsDate && parseDate(r.wbsDate))
+              .sort((a, b) => {
+                const byWbsDate = b.wbsDate.localeCompare(a.wbsDate);
+                return byWbsDate || String(b.savedAt || '').localeCompare(String(a.savedAt || ''));
+              })[0];
+            if (latest) restoreAnalysis(latest.id);
+            else navigateTo('p-upload');
+          }).catch(() => navigateTo('p-upload'));
+
+          if (initId && client) {
+            // URL ?id= 파라미터가 현재 프로젝트 소속인지 확인 후 복원
+            client.from('wbs_gen_analyses').select('id, project_id').eq('id', Number(initId)).maybeSingle()
+              .then(({ data }) => {
+                if (data && data.project_id === proj.id) {
+                  restoreAnalysis(Number(initId));
+                } else {
+                  updateUrlParam(null);
+                  doLoadLatest();
+                }
+              }).catch(() => doLoadLatest());
+          } else {
+            doLoadLatest();
+          }
         }).catch(() => {
-          if (WBS_DATA.length === 0) navigateTo('p-upload');
+          localStorage.removeItem(GEN_PROJECT_KEY);
+          updateHistoryCount(); populateFileSelect(); renderMembersPage();
+          requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
         });
+      } else {
+        updateHistoryCount(); populateFileSelect(); renderMembersPage();
+        requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
       }
     }).catch(() => {
-      if (WBS_DATA.length === 0) navigateTo('p-upload');
+      requireAuthThen(openProjectModal, '프로젝트를 선택하세요.');
     });
   </script>
 </body>
