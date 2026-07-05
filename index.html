@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WBS 일정 분석</title>
+  <title>ZITEN Project | WBS 일정 분석</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
@@ -25,14 +26,19 @@
   <!-- ===== 사이드바 ===== -->
   <div class="sidebar">
     <div class="brand">
-      <div class="b1">WBS 일정 분석 · 범용</div>
+      <div class="brand-logo-row">
+        <img src="img/logo.png" alt="ZITEN Project 로고" class="brand-logo">
+        <div class="brand-logo-text">
+          <div class="b1">ZITEN Project</div>
+          <div class="b-sub">WBS 일정 분석</div>
+        </div>
+      </div>
       <div class="brand-b2-row">
         <div class="b2" id="sidebarProjectName" style="font-size:14.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">프로젝트 미선택</div>
         <button class="proj-switch-btn" onclick="onClickProjectSwitch()" title="프로젝트 전환">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         </button>
       </div>
-      <div class="b-dot"><span></span><em>WBS 기반 자동 분석</em></div>
     </div>
 
     <div class="nav-section-label">데이터 관리</div>
@@ -778,7 +784,7 @@
       </div>
     </div>
 
-    <div class="footer">WBS 일정 분석 프로그램 (범용) · 작성자: 이희성</div>
+    <div class="footer">ZITEN Project · WBS 일정 분석 프로그램 · 작성자: 이희성</div>
   </div>
 
   <!-- 비밀번호 모달 -->
