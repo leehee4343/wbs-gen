@@ -577,7 +577,7 @@
     }
 
     /* ===== 관리자 인증 ===== */
-    const PROTECTED_PAGES = new Set(['p-members', 'p-mail']);
+    const PROTECTED_PAGES = new Set(['p-upload', 'p-members', 'p-mail']);
     let _authed = false;
     let _pendingPage = '';
 
