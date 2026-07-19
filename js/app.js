@@ -1999,6 +1999,10 @@
     }
 
     function deleteAnalysis(id) {
+      requireAuthThen(() => doDeleteAnalysis(id), '분석 결과 삭제는 관리자만 가능합니다.');
+    }
+
+    function doDeleteAnalysis(id) {
       genDbGet(id).then(r => {
         const labelName = r ? `"${r.fileName}" (기준일 ${r.wbsDate})` : `ID ${id}번 레코드`;
         if (!confirm(`${labelName} 저장 결과를 삭제하시겠습니까?`)) return;
