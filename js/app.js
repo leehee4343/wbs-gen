@@ -502,14 +502,6 @@
       document.getElementById('todayLabel').textContent = fmt(TODAY) + ' (' + ['일', '월', '화', '수', '목', '금', '토'][TODAY.getDay()] + ')';
       document.getElementById('srcTag').textContent = '데이터 출처: ' + CURRENT_SOURCE_NAME;
 
-      const projEnd = _currentProject && _currentProject.end_date ? parseDate(_currentProject.end_date) : null;
-      if (projEnd) {
-        const dday = Math.round((projEnd - TODAY) / 86400000);
-        document.getElementById('ddayLabel').textContent = dday >= 0 ? `사업종료 D-${dday}` : `사업종료 D+${-dday}`;
-      } else {
-        document.getElementById('ddayLabel').textContent = 'D-?';
-      }
-
       const thisLabel = `${fmtShort(wMon)} ~ ${fmtShort(wSun)}`;
       const nextLabel = `${fmtShort(nMon)} ~ ${fmtShort(nFri)}`;
       ['thisWeekRangeLabel', 'thisWeekRangeLabel2'].forEach(id => document.getElementById(id).textContent = thisLabel);
@@ -1040,7 +1032,9 @@
     /* ===================== 엑셀 업로드 / 파싱 ===================== */
     function excelDateToStr(v) {
       if (v instanceof Date) {
-        const y = v.getFullYear(), m = ('0' + (v.getMonth() + 1)).slice(-2), d = ('0' + v.getDate()).slice(-2);
+        // SheetJS가 생성한 날짜 객체가 미세한 시간 연산 오차로 자정 경계선(KST 23:59:08 등)에 걸려 하루 밀리는 현상을 방지하기 위해 12시간 오프셋을 더합니다.
+        const offsetDate = new Date(v.getTime() + 12 * 60 * 60 * 1000);
+        const y = offsetDate.getFullYear(), m = ('0' + (offsetDate.getMonth() + 1)).slice(-2), d = ('0' + offsetDate.getDate()).slice(-2);
         return `${y}-${m}-${d}`;
       }
       // Excel 시리얼 숫자 → 날짜 변환 (Excel epoch: 1899-12-30 기준, 1900 윤년 버그 포함)

@@ -465,17 +465,6 @@
       border-color: var(--navy3);
     }
 
-    .today-box .ddiff {
-      font-size: 11.5px;
-      font-weight: 800;
-      color: var(--accent);
-      background: linear-gradient(135deg, #FFF9EA, #FFF3D0);
-      border: 1px solid rgba(245, 158, 11, .25);
-      border-radius: 20px;
-      padding: 4px 11px;
-      white-space: nowrap;
-    }
-
     .today-sep {
       width: 1px;
       height: 32px;
