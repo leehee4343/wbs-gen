@@ -114,6 +114,8 @@
     /* ===================== 날짜 유틸 ===================== */
     function parseDate(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
     function fmt(d) { if (!d) return '-'; const y = d.getFullYear(), m = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2); return `${y}-${m}-${dd}`; }
+    // 화면 표시용 날짜 (가이드 7장: YYYY.MM.DD). 저장·비교용 값은 fmt()의 YYYY-MM-DD를 그대로 사용합니다.
+    function fmtDot(v) { const s = v instanceof Date ? fmt(v) : (v || ''); return s ? s.replace(/-/g, '.') : '-'; }
     function fmtShort(d) { if (!d) return '-'; const m = d.getMonth() + 1, dd = d.getDate(); const w = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]; return `${m}/${dd}(${w})`; }
     function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
     function startOfDay(d) { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; }
@@ -174,11 +176,11 @@
         ? `<span class="t-delaydays">${dd}일 지연</span>`
         : (st === 'delay' && isDelayByDate(t) ? `<span class="t-delaydays">마감일 도래</span>` : '');
       const progGapNote = (progGap > 0 && dd === 0)
-        ? `<span class="t-delaydays" style="background:#FEF3C7;color:#92400E;border-color:#FDE68A;">실적 ${progGap}%p 미달</span>`
+        ? `<span class="t-delaydays warn">실적 ${progGap}%p 미달</span>`
         : '';
       const phasePart = t.phase ? `<span class="m-tag">${t.phase}</span>` : '';
-      const actPart = t.activity ? `<span style="color:var(--text-sub);">${t.activity}</span>` : '';
-      const delivPart = t.deliverable ? `<span class="m-tag" style="background:var(--bg);color:var(--text-muted);">산출물: ${t.deliverable}</span>` : '';
+      const actPart = t.activity ? `<span class="t-activity">${t.activity}</span>` : '';
+      const delivPart = t.deliverable ? `<span class="m-tag">산출물: ${t.deliverable}</span>` : '';
 
       const hasActual = ap !== undefined && ap !== null;
       const hasDiff = hasActual && ap !== t.progress;
@@ -242,7 +244,7 @@
       const grouped = groupByPhase(list);
       let html = '';
       grouped.forEach((tasks, phase) => {
-        html += `<div class="phase-group"><div class="phase-title">${phase}</div>`;
+        html += `<div class="phase-group"><h3 class="phase-title">${phase}<span class="phase-count">${tasks.length}건</span></h3>`;
         tasks.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
         tasks.forEach(t => html += taskRowHtml(t, showPlanActual));
         html += `</div>`;
@@ -303,10 +305,11 @@
       }
       const sorted = sortFn ? [...list].sort(sortFn) : [...list].sort((a, b) => (a.start || '').localeCompare(b.start || ''));
       const top = sorted.slice(0, max);
-      let html = '';
+      let html = '<div class="phase-group">';
       top.forEach(t => html += taskRowHtml(t));
+      html += '</div>';
       if (sorted.length > max) {
-        html += `<div class="empty-msg">외 ${sorted.length - max}건 더 있음</div>`;
+        html += `<div class="empty-msg more">외 ${sorted.length - max}건이 더 있습니다.</div>`;
       }
       container.innerHTML = html;
     }
@@ -383,10 +386,10 @@
         <span class="tree-chevron">${CHEVRON_SVG}</span>
         <span class="tree-act-name">${activity}</span>
         <div class="tree-act-meta">
-          <span class="tree-chip tc-total" style="font-size:10.5px">${tasks.length}건</span>
-          ${aDelay > 0 ? `<span class="tree-chip tc-delay" style="font-size:10.5px">지연 ${aDelay}</span>` : ''}
-          ${aProg  > 0 ? `<span class="tree-chip tc-prog" style="font-size:10.5px">진행 ${aProg}</span>` : ''}
-          <div class="tree-prog-bar" style="width:60px"><div class="tree-prog-fill" style="width:${aAvg}%"></div></div>
+          <span class="tree-chip tc-total">${tasks.length}건</span>
+          ${aDelay > 0 ? `<span class="tree-chip tc-delay">지연 ${aDelay}</span>` : ''}
+          ${aProg  > 0 ? `<span class="tree-chip tc-prog">진행 ${aProg}</span>` : ''}
+          <div class="tree-prog-bar"><div class="tree-prog-fill" style="width:${aAvg}%"></div></div>
           <span class="tree-prog-pct">${aAvg}%</span>
         </div>
       </div>
@@ -397,26 +400,26 @@
             const dd = delayDays(t);
             const start = parseDate(t.start), end = parseDate(t.end);
             const actualEnd = parseDate(t.actual_end);
-            const dateStr = `${fmt(start)} ~ ${fmt(end)}${st === 'done' && actualEnd ? ` · 완료 ${fmt(actualEnd)}` : ''}`;
+            const dateStr = `${fmtDot(start)} ~ ${fmtDot(end)}${st === 'done' && actualEnd ? ` · 완료 ${fmtDot(actualEnd)}` : ''}`;
             const delayText = dd > 0
-              ? `<span class="t-delaydays" style="font-size:10px;padding:1px 6px;flex-shrink:0">${dd}일 지연</span>`
-              : (st === 'delay' && isDelayByDate(t) ? `<span class="t-delaydays" style="font-size:10px;padding:1px 6px;flex-shrink:0">마감일 도래</span>` : '');
+              ? `<span class="t-delaydays">${dd}일 지연</span>`
+              : (st === 'delay' && isDelayByDate(t) ? `<span class="t-delaydays">마감일 도래</span>` : '');
             const rowCls = st === 'delay' ? 'is-delay' : (st === 'done' ? 'is-done' : '');
-            const barColor = st === 'done' ? 'background:var(--green)' : (st === 'delay' ? 'background:var(--red)' : '');
+            const barCls = st === 'done' ? 'is-done' : (st === 'delay' ? 'is-delay' : '');
             const ap = t.actualProgress;
             const showDual = ap !== undefined && ap !== t.progress;
-            const titleAttr = t.deliverable ? ` title="${t.task}${t.deliverable ? ' | 산출물: ' + t.deliverable : ''}"` : '';
+            const titleAttr = ` title="${t.task}${t.deliverable ? ' | 산출물: ' + t.deliverable : ''}"`;
             const pctHtml = showDual
-              ? `<span class="tree-task-pct">${t.progress}%·<span style="color:var(--green)">${ap}%</span></span>`
+              ? `<span class="tree-task-pct" title="계획 ${t.progress}% · 실적 ${ap}%">${t.progress}% · <span class="actual">${ap}%</span></span>`
               : `<span class="tree-task-pct">${t.progress}%</span>`;
 
             html += `
         <div class="tree-task-row ${rowCls}">
-          <div style="display:flex;align-items:center">${badgeHtml(st)}</div>
-          <div class="tree-task-name"${titleAttr}><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.task}</span>${delayText}</div>
+          <div class="tree-task-badge">${badgeHtml(st)}</div>
+          <div class="tree-task-name"${titleAttr}><span class="tree-task-text">${t.task}</span>${delayText}</div>
           <div class="tree-task-dates">${dateStr}</div>
           <div class="tree-task-bar">
-            <div class="mini-bar-bg" style="flex:1"><div class="mini-bar-fill" style="width:${t.progress}%;${barColor}"></div></div>
+            <div class="mini-bar-bg"><div class="mini-bar-fill ${barCls}" style="width:${t.progress}%"></div></div>
             ${pctHtml}
           </div>
         </div>`;
@@ -479,12 +482,16 @@
         const avgProgress = Math.round(tasks.reduce((s, t) => s + (t.weight || 0) * t.progress, 0) / totalW);
         html += `
     <div class="phase-group">
-      <div class="phase-title">${phase} <span style="color:var(--text-sub);font-weight:500;">(${total}건)</span></div>
-      <div class="task-row ${delayCnt > 0 ? 'is-delay' : ''}">
+      <h3 class="phase-title">${phase}<span class="phase-count">${total}건</span></h3>
+      <div class="task-row phase-summary-row ${delayCnt > 0 ? 'is-delay' : ''}">
         <div class="task-info">
-          <div class="t-meta">완료 ${doneCnt} · 진행중 ${progCnt} · <span style="${delayCnt > 0 ? 'color:var(--red);font-weight:700;' : ''}">지연 ${delayCnt}</span></div>
+          <div class="t-meta">
+            <span class="badge-success">완료 ${doneCnt}</span>
+            <span class="badge-warning">진행중 ${progCnt}</span>
+            <span class="${delayCnt > 0 ? 'badge-danger' : 'badge-tag'}">지연 ${delayCnt}</span>
+          </div>
         </div>
-        <div class="task-bar-wrap" style="width:240px;">
+        <div class="task-bar-wrap">
           <div class="task-bar-bg ${delayCnt > 0 ? 'delaybar' : ''}"><div class="task-bar-fill" style="width:${avgProgress}%;"></div></div>
           <div class="task-pct">가중 평균 공정율 ${avgProgress}%</div>
         </div>
@@ -499,8 +506,10 @@
       const [nMon, nSun] = getWeekRange(addDays(TODAY, 7));
       const nFri = addDays(nMon, 4);
 
-      document.getElementById('todayLabel').textContent = fmt(TODAY) + ' (' + ['일', '월', '화', '수', '목', '금', '토'][TODAY.getDay()] + ')';
-      document.getElementById('srcTag').textContent = '데이터 출처: ' + CURRENT_SOURCE_NAME;
+      document.getElementById('todayLabel').textContent = fmtDot(TODAY) + ' (' + ['일', '월', '화', '수', '목', '금', '토'][TODAY.getDay()] + ')';
+      const srcTag = document.getElementById('srcTag');
+      srcTag.textContent = '데이터 출처: ' + (CURRENT_SOURCE_NAME || '-');
+      srcTag.title = CURRENT_SOURCE_NAME || '';
 
       const thisLabel = `${fmtShort(wMon)} ~ ${fmtShort(wSun)}`;
       const nextLabel = `${fmtShort(nMon)} ~ ${fmtShort(nFri)}`;
@@ -540,14 +549,20 @@
       // 공정율 게이지
       const planRate = calcPlanRate();
       const actualRate = calcActualRate();
-      const gap = actualRate - planRate;
+      // 표시 자릿수(소수 1자리)로 반올림해 '-0.0%p' 같은 표기를 막습니다.
+      const gap = Math.round((actualRate - planRate) * 10) / 10 || 0;
       document.getElementById('phPlanRate').textContent = planRate.toFixed(1) + '%';
       document.getElementById('phActualRate').textContent = actualRate.toFixed(1) + '%';
       document.getElementById('phGapRate').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%p';
-      document.getElementById('phGapRate').style.color = gap < -0.5 ? '#B91C1C' : '#047857';
+      document.getElementById('phGapRate').style.color = gap < -0.5 ? 'var(--danger-text)' : 'var(--success-text)';
       document.getElementById('phDelayCnt').textContent = delayTasks.length + '건';
-      document.getElementById('phMainLabel').textContent = gap < -0.5 ? '계획 대비 지연 중' : (gap > 0.5 ? '계획 대비 선행 중' : '계획대로 진행 중');
+      document.getElementById('phDelayCnt').style.color = delayTasks.length > 0 ? 'var(--danger-text)' : '';
+      const mainLabel = document.getElementById('phMainLabel');
+      mainLabel.textContent = gap < -0.5 ? '계획 대비 지연 중' : (gap > 0.5 ? '계획 대비 선행 중' : '계획대로 진행 중');
+      mainLabel.className = gap < -0.5 ? 'badge-danger' : (gap > 0.5 ? 'badge-success' : 'badge-info');
       document.getElementById('gaugeLabel').innerHTML = actualRate.toFixed(1) + '%<span class="g-sub">실적</span>';
+      document.getElementById('gaugeSvg').setAttribute('aria-label', `실적 공정율 ${actualRate.toFixed(1)}%, 계획 공정율 ${planRate.toFixed(1)}%`);
+      document.getElementById('kpiDelay').closest('.kpi').classList.toggle('is-empty', delayTasks.length === 0);
       const circumference = 339.292;
       const offset = circumference - (circumference * Math.min(100, actualRate) / 100);
       document.getElementById('gaugeFill').style.strokeDashoffset = offset;
@@ -573,7 +588,17 @@
     document.getElementById('filterKeyword').addEventListener('input', renderAllTable);
 
     function toggleSidebar() {
-      document.body.classList.toggle('sidebar-collapsed');
+      const collapsed = document.body.classList.toggle('sidebar-collapsed');
+      const btn = document.querySelector('.sidebar-toggle');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', collapsed ? '메뉴 펼치기' : '메뉴 접기');
+    }
+
+    /* 모달 열림 상태 (가이드 5.8: 배경 스크롤 잠금 · aria-hidden 갱신) */
+    function setModalOpen(overlay, open) {
+      overlay.classList.toggle('open', open);
+      overlay.setAttribute('aria-hidden', String(!open));
+      document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop.open'));
     }
 
     /* ===== 관리자 인증 ===== */
@@ -583,9 +608,9 @@
 
     function _openAuthModal(desc) {
       document.getElementById('authCardDesc').textContent = desc || '관리자 확인 후 이용할 수 있습니다.';
-      document.getElementById('authOverlay').classList.add('open');
+      setModalOpen(document.getElementById('authOverlay'), true);
       const inp = document.getElementById('authPwInput');
-      inp.type = 'password'; inp.value = '';
+      inp.type = 'password'; inp.value = ''; inp.removeAttribute('aria-invalid');
       const error = document.getElementById('authError');
       error.textContent = ''; error.classList.remove('show');
       setTimeout(() => inp.focus(), 80);
@@ -617,12 +642,13 @@
         error.textContent = '비밀번호가 올바르지 않습니다. 다시 입력해 주세요.';
         error.classList.add('show');
         const inp = document.getElementById('authPwInput');
+        inp.setAttribute('aria-invalid', 'true');
         inp.value = ''; inp.focus();
       }
     }
 
     function closeAuthModal() {
-      document.getElementById('authOverlay').classList.remove('open');
+      setModalOpen(document.getElementById('authOverlay'), false);
     }
 
     function toggleAuthPassword() {
@@ -646,13 +672,24 @@
       if (nav) nav.classList.add('active');
       const page = document.getElementById(pageId);
       if (page) page.classList.add('on');
+      window.scrollTo(0, 0);
       if (pageId === 'p-history') renderHistoryPage();
       if (pageId === 'p-members') renderMembersPage();
       if (pageId === 'p-mail') renderMailPage();
     }
 
     document.querySelectorAll('.nav-item').forEach(item => {
+      item.setAttribute('role', 'link');
+      item.setAttribute('tabindex', '0');
       item.addEventListener('click', () => requireAuth(item.dataset.page));
+      item.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); requireAuth(item.dataset.page); }
+      });
+    });
+
+    // 대시보드 KPI 카드·더보기 링크 → 해당 화면 이동
+    document.querySelectorAll('[data-nav]').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); requireAuth(el.dataset.nav); });
     });
 
     function populateFileSelect(activeId) {
@@ -663,7 +700,7 @@
         sel.innerHTML = '<option value="">날짜 선택</option>' +
           dates.map(d => {
             const rec = all.find(r => r.wbsDate === d);
-            return `<option value="${rec.id}"${rec.id === activeId ? ' selected' : ''}>${d}</option>`;
+            return `<option value="${rec.id}"${rec.id === activeId ? ' selected' : ''}>${fmtDot(d)}</option>`;
           }).join('');
       });
     }
@@ -684,7 +721,7 @@
       if (!editorEl || !window.Quill) return null;
       mailEditor = new Quill(editorEl, {
         theme: 'snow',
-        placeholder: '메일 내용을 입력하세요',
+        placeholder: '메일 내용을 입력해 주세요',
         modules: {
           toolbar: [
             [{ header: [1, 2, 3, false] }],
@@ -725,8 +762,8 @@
           .sort((a, b) => (a.savedAt || '').localeCompare(b.savedAt || ''))
           .forEach(r => byFile.set(r.fileName, r));
         const records = [...byFile.values()].sort((a, b) => b.wbsDate.localeCompare(a.wbsDate));
-        select.innerHTML = '<option value="current">기준일 선택 — 현재 분석 (' + fmt(TODAY) + ')</option>' +
-          records.map(r => `<option value="${r.id}">${r.wbsDate} · ${r.fileName}</option>`).join('');
+        select.innerHTML = '<option value="current">기준일 선택 — 현재 분석 (' + fmtDot(TODAY) + ')</option>' +
+          records.map(r => `<option value="${r.id}">${fmtDot(r.wbsDate)} · ${r.fileName}</option>`).join('');
         select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
       });
     }
@@ -823,17 +860,12 @@
           return;
         }
 
-        toWrap.innerHTML = members.map(m =>
-          `<span class="mail-chip" id="to-${m.id}" onclick="toggleMailChip(${m.id},'to')">
+        const chipHtml = (m, area) =>
+          `<button type="button" class="mail-chip" id="${area}-${m.id}" aria-pressed="false" onclick="toggleMailChip(${m.id},'${area}')">
             ${m.name} <span class="mail-chip-sub">${m.role}</span>
-          </span>`
-        ).join('');
-
-        ccWrap.innerHTML = members.map(m =>
-          `<span class="mail-chip" id="cc-${m.id}" onclick="toggleMailChip(${m.id},'cc')">
-            ${m.name} <span class="mail-chip-sub">${m.role}</span>
-          </span>`
-        ).join('');
+          </button>`;
+        toWrap.innerHTML = members.map(m => chipHtml(m, 'to')).join('');
+        ccWrap.innerHTML = members.map(m => chipHtml(m, 'cc')).join('');
       });
     }
 
@@ -843,6 +875,7 @@
       if (!el) return;
       if (set.has(id)) { set.delete(id); el.classList.remove('selected'); }
       else             { set.add(id);    el.classList.add('selected'); }
+      el.setAttribute('aria-pressed', String(set.has(id)));
     }
 
     /* --- EmailJS 설정 관리 --- */
@@ -1023,7 +1056,7 @@
       _mailTo.clear();
       _mailCc.clear();
       document.querySelectorAll('#mailToChips .mail-chip, #mailCcChips .mail-chip')
-        .forEach(el => el.classList.remove('selected'));
+        .forEach(el => { el.classList.remove('selected'); el.setAttribute('aria-pressed', 'false'); });
       document.getElementById('mailSubject').value = '';
       const editor = ensureMailEditor();
       if (editor) editor.setText('');
@@ -1117,9 +1150,9 @@
         tbody.innerHTML = '';
       }
       const now = new Date();
-      const tstr = fmt(startOfDay(now)) + ' ' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+      const tstr = fmtDot(startOfDay(now)) + ' ' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${tstr}</td><td>${filename}</td><td>${count}건</td><td>${ok ? '<span style="color:var(--green);font-weight:700;">적용 완료</span>' : '<span style="color:var(--red);font-weight:700;">실패</span>'}</td>`;
+      tr.innerHTML = `<td>${tstr}</td><td>${filename}</td><td>${count}</td><td>${ok ? '<span class="badge-success">적용 완료</span>' : '<span class="badge-danger">실패</span>'}</td>`;
       tbody.prepend(tr);
     }
 
@@ -1150,20 +1183,20 @@
           }
           initFilters();
           renderAll();
-          const dateNote = fileDateStr ? ` · 기준일 ${fileDateStr} (파일명)` : (todayStr ? ` · 기준일 ${todayStr} (엑셀 Today 셀)` : '');
+          const dateNote = fileDateStr ? ` · 기준일 ${fmtDot(fileDateStr)} (파일명)` : (todayStr ? ` · 기준일 ${fmtDot(todayStr)} (엑셀 Today 셀)` : '');
           statusEl.className = 'upload-status show ok';
-          statusEl.textContent = `✔ "${file.name}" 적용 완료 — TASK ${parsed.length}건 인식${dateNote}`;
+          statusEl.textContent = `"${file.name}" 적용 완료 — TASK ${parsed.length}건 인식${dateNote}`;
           addUploadHistory(file.name, parsed.length, true);
           showSaveBar(file.name, fmt(TODAY), parsed.length);
         } catch (err) {
           statusEl.className = 'upload-status show err';
-          statusEl.textContent = `⚠ 파일을 분석하지 못했습니다: ${err.message}`;
+          statusEl.textContent = `파일을 분석하지 못했습니다: ${err.message}`;
           addUploadHistory(file.name, 0, false);
         }
       };
       reader.onerror = function () {
         statusEl.className = 'upload-status show err';
-        statusEl.textContent = '⚠ 파일을 읽는 중 오류가 발생했습니다.';
+        statusEl.textContent = '파일을 읽는 중 오류가 발생했습니다.';
         addUploadHistory(file.name, 0, false);
       };
       reader.readAsArrayBuffer(file);
@@ -1314,13 +1347,32 @@
     }
 
     /* ===================== 토스트 ===================== */
-    let _toastTimer = null;
+    // 가이드 5.9: 우측 상단 토스트. 성공·정보는 3초 후 자동으로 닫히고 오류는 사용자가 닫을 때까지 유지합니다.
+    const TOAST_ICONS = {
+      success: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/>',
+      info:    '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+      danger:  '<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/>'
+    };
     function showToast(msg, type) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.className = 'show' + (type ? ' ' + type : '');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+      const kind = type === 'ok' ? 'success' : (type === 'err' ? 'danger' : 'info');
+      const stack = document.getElementById('toastStack');
+      // 진행 안내(정보) 토스트는 다음 알림으로 교체합니다.
+      stack.querySelectorAll('.toast.info').forEach(t => t.remove());
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + kind;
+      toast.setAttribute('role', kind === 'danger' ? 'alert' : 'status');
+      toast.innerHTML = `<svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${TOAST_ICONS[kind]}</svg>
+        <span class="toast-message"></span>
+        <button type="button" class="toast-close" aria-label="알림 닫기">&times;</button>`;
+      toast.querySelector('.toast-message').textContent = msg;
+      const close = () => {
+        if (!toast.isConnected) return;
+        toast.classList.add('leaving');
+        setTimeout(() => toast.remove(), 250);
+      };
+      toast.querySelector('.toast-close').addEventListener('click', close);
+      stack.appendChild(toast);
+      if (kind !== 'danger') setTimeout(close, 3000);
     }
 
     /* ===================== 저장 관련 상태 ===================== */
@@ -1328,7 +1380,7 @@
 
     function showSaveBar(fileName, wbsDate, taskCount) {
       const bar = document.getElementById('saveBar');
-      document.getElementById('saveBarTitle').textContent = `"${fileName}" — ${taskCount}건 인식, 기준일 ${wbsDate}`;
+      document.getElementById('saveBarTitle').textContent = `"${fileName}" — ${taskCount}건 인식, 기준일 ${fmtDot(wbsDate)}`;
       document.getElementById('saveBarSub').textContent = '분석 결과를 확인한 후 최종 저장하면 조회 메뉴에서 다시 불러올 수 있습니다.';
       bar.classList.add('visible');
     }
@@ -1370,7 +1422,7 @@
           showToast('클라우드에 저장하는 중...', 'info');
           supabaseAddOrUpdate(record, existingId).then(globalId => {
             genDbUpdate(globalId, Object.assign({}, record, { project_id: _currentProject?.id })).catch(() => {});
-            showToast('✔ 클라우드 저장 완료!', 'ok');
+            showToast('클라우드에 저장되었습니다.', 'ok');
             updateHistoryCount();
             populateFileSelect(globalId);
             renderHistoryPage();
@@ -1393,7 +1445,7 @@
         });
       } else {
         const pid = _currentProject?.id ?? null;
-        const localMsg = _currentProject ? '✔ 로컬 저장 완료 (클라우드 미연동)' : '✔ 브라우저에만 저장됨 (프로젝트 미선택)';
+        const localMsg = _currentProject ? '이 브라우저에 저장되었습니다. (클라우드 미연동)' : '이 브라우저에만 저장되었습니다. (프로젝트 미선택)';
         genDbGetAll().then(all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && (r.project_id ?? null) === pid);
           const recWithPid = Object.assign({}, record, { project_id: pid });
@@ -1628,29 +1680,23 @@
         if (navBadge) { navBadge.textContent = count; navBadge.style.display = count > 0 ? 'inline-flex' : 'none'; }
 
         if (count === 0) {
-          tbody.innerHTML = `<tr><td colspan="7"><div class="member-empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            등록된 구성원이 없습니다.<br>위의 <b>구성원 추가</b> 버튼을 눌러 추가하세요.
-          </div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="table-empty">등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.</td></tr>`;
           return;
         }
 
-        const dash = '<span style="color:var(--text-muted)">-</span>';
+        const dash = '<span class="text-muted">-</span>';
         tbody.innerHTML = all.map((m, i) => {
-          const role = m.role ? `<span class="member-role-badge dev">${m.role}</span>` : dash;
+          const role = m.role ? `<span class="member-role-badge">${m.role}</span>` : dash;
           return `<tr>
-            <td style="color:var(--text-muted);font-size:12px">${i + 1}</td>
-            <td><strong>${m.name}</strong></td>
+            <td>${i + 1}</td>
+            <td>${m.name}</td>
             <td>${role}</td>
             <td>${m.title || dash}</td>
             <td>${m.email}</td>
             <td>${m.phone || dash}</td>
             <td><div class="member-actions">
-              <button class="btn-m-edit" onclick="editMember(${m.id})">수정</button>
-              <button class="btn-m-del" onclick="deleteMember(${m.id})">삭제</button>
+              <button type="button" class="btn btn-secondary btn-row" onclick="editMember(${m.id})">수정</button>
+              <button type="button" class="btn btn-delete btn-row" onclick="deleteMember(${m.id})">삭제</button>
             </div></td>
           </tr>`;
         }).join('');
@@ -1659,7 +1705,7 @@
 
     function fmtSavedAt(iso) {
       const d = new Date(iso);
-      return `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)} ${('0'+d.getHours()).slice(-2)}:${('0'+d.getMinutes()).slice(-2)}`;
+      return `${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}.${('0'+d.getDate()).slice(-2)} ${('0'+d.getHours()).slice(-2)}:${('0'+d.getMinutes()).slice(-2)}`;
     }
 
     // 분석 이력은 IndexedDB/클라우드에서 비동기로 불러온다. 이전 요청이 늦게
@@ -1685,16 +1731,16 @@
 
         // SELECT 옵션 갱신 (wbsDate 오름차순, 중복 제거)
         const dates = [...new Set(all.map(r => r.wbsDate))].sort((a, b) => a.localeCompare(b));
-        sel.innerHTML = '<option value="">전체 날짜 보기</option>' +
-          dates.map(d => `<option value="${d}"${d === selectedDate ? ' selected' : ''}>${d}</option>`).join('');
+        sel.innerHTML = '<option value="">전체</option>' +
+          dates.map(d => `<option value="${d}"${d === selectedDate ? ' selected' : ''}>${fmtDot(d)}</option>`).join('');
 
         const list = all.filter(r => !selectedDate || r.wbsDate === selectedDate)
           .sort((a, b) => a.wbsDate.localeCompare(b.wbsDate));
 
         if (list.length === 0) {
           container.innerHTML = all.length === 0
-            ? `<div class="hist-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v4l3 3M3.05 11a9 9 0 1 0 .5-3M3 4v4h4"/></svg>저장된 분석 결과가 없습니다.<br>WBS 업데이트 후 <b>최종 저장</b>을 눌러 기록을 남기세요.</div>`
-            : `<div class="hist-empty">검색 조건에 해당하는 결과가 없습니다.</div>`;
+            ? `<div class="hist-empty">저장된 분석 결과가 없습니다.<br>WBS 업데이트 후 최종 저장을 눌러 기록을 남겨 주세요.</div>`
+            : `<div class="hist-empty">조회된 데이터가 없습니다. 기준일 조건을 초기화해 주세요.</div>`;
           return;
         }
 
@@ -1709,27 +1755,27 @@
           html += `
 <div class="hist-card${isActive ? ' active-snapshot' : ''}">
   <div class="hist-date-block">
-    <div class="hist-wbs-date">${r.wbsDate}<small>기준일</small></div>
-    <span class="hist-active-badge">현재 분석 중</span>
+    <div class="hist-wbs-date">${fmtDot(r.wbsDate)}<small>기준일</small></div>
+    <span class="hist-active-badge badge-info">현재 분석 중</span>
   </div>
   <div class="hist-file-block">
-    <div class="hist-filename" title="${r.fileName}">📎 ${r.fileName}</div>
-    <div class="hist-saved-at">저장: ${fmtSavedAt(r.savedAt)}</div>
+    <div class="hist-filename" title="${r.fileName}">${r.fileName}</div>
+    <div class="hist-saved-at">저장 ${fmtSavedAt(r.savedAt)}</div>
   </div>
   <div class="hist-stats">
     <div class="hs-item"><div class="hs-label">전체 TASK</div><div class="hs-value">${s.total}</div></div>
     <div class="hs-item"><div class="hs-label">완료</div><div class="hs-value c-green">${s.done}</div></div>
-    <div class="hs-item"><div class="hs-label">지연</div><div class="hs-value c-red">${s.delay}</div></div>
+    <div class="hs-item"><div class="hs-label">지연</div><div class="hs-value ${s.delay > 0 ? 'c-red' : ''}">${s.delay}</div></div>
     <div class="hs-item"><div class="hs-label">계획 공정율</div><div class="hs-value">${s.planRate}%</div></div>
     <div class="hs-item"><div class="hs-label">실적 공정율</div><div class="hs-value c-accent">${s.actualRate}%</div></div>
     <div class="hs-item"><div class="hs-label">Gap</div><div class="hs-value ${gapColor}">${gapStr}</div></div>
   </div>
   <div class="hist-footer">
     <div class="hist-actions">
-      <button class="btn-restore" onclick="restoreAnalysis(${r.id})">불러오기</button>
-      <button class="btn-link" onclick="copyAnalysisLink(${r.id})">링크 복사</button>
-      <button class="btn-download" onclick="downloadAnalysisFile(${r.id})">파일 다운로드</button>
-      <button class="btn-del" onclick="deleteAnalysis(${r.id})">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="restoreAnalysis(${r.id})">불러오기</button>
+      <button type="button" class="btn btn-secondary" onclick="copyAnalysisLink(${r.id})">링크 복사</button>
+      <button type="button" class="btn btn-secondary" onclick="downloadAnalysisFile(${r.id})">파일 다운로드</button>
+      <button type="button" class="btn btn-delete" onclick="deleteAnalysis(${r.id})">삭제</button>
     </div>
   </div>
 </div>`;
@@ -1961,7 +2007,7 @@
       initFilters();
       renderAll();
       showSaveBar(r.fileName, r.wbsDate, tasks.length);
-      showToast(`✔ "${r.fileName}" (기준일 ${r.wbsDate}) 불러오기 완료`, 'ok');
+      showToast(`"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})을 불러왔습니다.`, 'ok');
       updateUrlParam(id);
       navigateTo('p-dash');
     }
@@ -2121,12 +2167,12 @@
     }
 
     function openProjectModal() {
-      document.getElementById('projOverlay').classList.add('open');
+      setModalOpen(document.getElementById('projOverlay'), true);
       renderProjectList();
     }
 
     function closeProjModal() {
-      document.getElementById('projOverlay').classList.remove('open');
+      setModalOpen(document.getElementById('projOverlay'), false);
       closeProjAddForm();
     }
 
@@ -2213,12 +2259,12 @@
         document.getElementById('projList').innerHTML = '<div class="proj-empty">Supabase 연결이 필요합니다.</div>';
         return;
       }
-      document.getElementById('projList').innerHTML = '<div class="proj-empty" style="color:var(--text-muted);font-size:13px;">불러오는 중...</div>';
+      document.getElementById('projList').innerHTML = '<div class="proj-empty">불러오는 중…</div>';
       client.from('wbs_gen_projects').select('*').order('name').then(({ data, error }) => {
         if (error) {
           const m = error?.message || String(error);
           if (m.includes('does not exist') || m.includes('relation')) {
-            document.getElementById('projList').innerHTML = '<div class="proj-empty" style="color:var(--red)">⚠ Supabase 테이블 없음<br>Supabase SQL Editor에서<br><b>supabase_setup_gen.sql</b>을 실행하세요.</div>';
+            document.getElementById('projList').innerHTML = '<div class="proj-empty is-error">Supabase 테이블이 없습니다.<br>Supabase SQL Editor에서 sql/supabase_setup_gen.sql을 실행해 주세요.</div>';
           } else {
             showToast('프로젝트 목록 오류: ' + m, 'err');
           }
@@ -2226,7 +2272,7 @@
         }
         const list = data || [];
         if (list.length === 0) {
-          document.getElementById('projList').innerHTML = '<div class="proj-empty">등록된 프로젝트가 없습니다.<br>위의 <b>새 프로젝트 추가</b>를 눌러 시작하세요.</div>';
+          document.getElementById('projList').innerHTML = '<div class="proj-empty">등록된 프로젝트가 없습니다.<br>새 프로젝트 추가를 눌러 시작해 주세요.</div>';
           return;
         }
         document.getElementById('projList').innerHTML = list.map(p => {
@@ -2241,11 +2287,11 @@
             </div>
             <div class="proj-card-actions">
               ${isActive
-                ? '<span class="proj-current-badge">현재 선택</span>'
-                : `<button class="btn btn-primary" style="min-height:30px;padding:0 12px;font-size:12px" onclick="selectProject(JSON.parse(this.dataset.p))" data-p="${escapedP}">선택</button>`
+                ? '<span class="badge-info">현재 선택</span>'
+                : `<button type="button" class="btn btn-primary btn-row" onclick="selectProject(JSON.parse(this.dataset.p))" data-p="${escapedP}">선택</button>`
               }
-              <button class="btn-m-edit" onclick="openProjAddForm(JSON.parse(this.dataset.p))" data-p="${escapedP}">수정</button>
-              <button class="btn-m-del" onclick="deleteProjConfirm(${p.id},'${p.name.replace(/'/g,"\\'")}')">삭제</button>
+              <button type="button" class="btn btn-secondary btn-row" onclick="openProjAddForm(JSON.parse(this.dataset.p))" data-p="${escapedP}">수정</button>
+              <button type="button" class="btn btn-delete btn-row" onclick="deleteProjConfirm(${p.id},'${p.name.replace(/'/g,"\\'")}')">삭제</button>
             </div>
           </div>`;
         }).join('');
@@ -2275,6 +2321,9 @@
     const uploadZone = document.getElementById('uploadZone');
     const fileInput = document.getElementById('fileInput');
     uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
     fileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
     });
