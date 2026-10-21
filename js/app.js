@@ -1731,15 +1731,16 @@
         }
 
         const dash = '<span class="text-muted">-</span>';
+        // 이름·직책·연락처는 짧은 값이라 줄바꿈하지 않음(DF-012)
         tbody.innerHTML = all.map((m, i) => {
           const role = m.role ? `<span class="member-role-badge">${esc(m.role)}</span>` : dash;
           return `<tr>
             <td>${i + 1}</td>
-            <td>${esc(m.name)}</td>
+            <td class="cell-nowrap">${esc(m.name)}</td>
             <td>${role}</td>
-            <td>${m.title ? esc(m.title) : dash}</td>
+            <td class="cell-nowrap">${m.title ? esc(m.title) : dash}</td>
             <td>${esc(m.email)}</td>
-            <td>${m.phone ? esc(m.phone) : dash}</td>
+            <td class="cell-nowrap">${m.phone ? esc(m.phone) : dash}</td>
             <td><div class="member-actions">
               <button type="button" class="btn btn-secondary btn-row" onclick="editMember(${m.id})">수정</button>
               <button type="button" class="btn btn-delete btn-row" onclick="deleteMember(${m.id})">삭제</button>

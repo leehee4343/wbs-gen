@@ -1015,7 +1015,9 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
   text-align: center;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
+  word-break: keep-all;   /* 한글 단어 중간에서 끊지 않음(DF-012) */
 }
+.data-table td.cell-nowrap { white-space: nowrap; }
 .data-table :is(th, td) + :is(th, td) { border-left: 1px solid var(--table-column-divider); }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr:hover td { background: var(--bg-subtle); }
