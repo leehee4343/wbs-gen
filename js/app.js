@@ -289,7 +289,7 @@
     function getDelayTasks() {
       return WBS_DATA.filter(t => {
         if (isDone(t)) return false;
-        if (isDelayByDate(t)) return true;                                      // 계획완료일 도래/초과
+        if (isDelayByDate(t)) return true;                                      // 계획완료일 초과
         if (taskStatus(t) === 'progress' && hasProgressGap(t)) return true;     // 실적 미달
         return false;
       }).sort((a, b) => {
@@ -546,8 +546,8 @@
       const dateCnt = delayTasks.filter(t => isDelayByDate(t)).length;
       const gapCnt  = delayTasks.length - dateCnt;
       const delayBreakdown = dateCnt > 0 && gapCnt > 0
-        ? `마감 도래/초과 ${dateCnt}건 · 실적 미달 ${gapCnt}건`
-        : gapCnt > 0 ? `실적 미달 ${gapCnt}건` : `마감 도래/초과 ${dateCnt}건`;
+        ? `마감 초과 ${dateCnt}건 · 실적 미달 ${gapCnt}건`
+        : gapCnt > 0 ? `실적 미달 ${gapCnt}건` : `마감 초과 ${dateCnt}건`;   // 마감 당일은 지연이 아니므로 "도래" 표현 삭제(IR-01)
       document.getElementById('delayCountLabel').textContent = `총 ${delayTasks.length}건 (${delayBreakdown})`;
 
       // KPI
@@ -1862,7 +1862,8 @@
       };
       const isDelayByBaseline = t => {
         const end = parseDate(t.end);
-        return !!(end && !isDone(t) && baseline >= end);
+        // 마감 당일은 아직 지연이 아님 — 화면의 지연 판정(isDelayByDate, BR-06)과 같게(IR-01)
+        return !!(end && !isDone(t) && baseline > end);
       };
       const isInProgress = t => {
         const start = parseDate(t.start), end = parseDate(t.end);
@@ -1979,9 +1980,7 @@
           }
           const dd = taskDelayDays(t);
           const gap = t.actualProgress != null ? t.progress - t.actualProgress : 0;
-          const issue = isDelayByBaseline(t)
-            ? (dd > 0 ? `${dd}일 지연` : '마감일 도래')
-            : `실적 ${gap}%p 미달`;
+          const issue = isDelayByBaseline(t) ? `${dd}일 지연` : `실적 ${gap}%p 미달`;
           const pct = t.progress != null ? ` (계획 ${t.progress}%)` : '';
           const ap = t.actualProgress != null ? ` / 실적 ${t.actualProgress}%` : '';
           const start = t.start ? ` ${t.start}` : '';
