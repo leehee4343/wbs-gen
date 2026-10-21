@@ -362,7 +362,7 @@
         const isOpen = hasFilter ? 'open' : 'open'; // 기본 단계 펼침
         html += `
 <div class="tree-phase ${isOpen}">
-  <div class="tree-phase-hd" onclick="this.closest('.tree-phase').classList.toggle('open')">
+  <div class="tree-phase-hd" role="button" tabindex="0" aria-expanded="true" onclick="toggleTreeNode(this, '.tree-phase')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTreeNode(this, '.tree-phase');}">
     <span class="tree-chevron">${CHEVRON_SVG}</span>
     <span class="tree-phase-name">${esc(phase)}</span>
     <div class="tree-phase-meta">
@@ -385,7 +385,7 @@
 
           html += `
     <div class="tree-activity ${actOpen}">
-      <div class="tree-act-hd" onclick="this.closest('.tree-activity').classList.toggle('open')">
+      <div class="tree-act-hd" role="button" tabindex="0" aria-expanded="${actOpen ? 'true' : 'false'}" onclick="toggleTreeNode(this, '.tree-activity')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTreeNode(this, '.tree-activity');}">
         <span class="tree-chevron">${CHEVRON_SVG}</span>
         <span class="tree-act-name">${esc(activity)}</span>
         <div class="tree-act-meta">
@@ -437,10 +437,18 @@
       document.getElementById('wbsTree').innerHTML = html;
     }
 
+    // 트리 단계·활동 머리글은 키보드(Enter·Space)로도 펼치고 접으며 펼침 상태를 aria-expanded로 알림(DF-017)
+    function toggleTreeNode(header, nodeSelector) {
+      const open = header.closest(nodeSelector).classList.toggle('open');
+      header.setAttribute('aria-expanded', String(open));
+    }
+
     function setTreeAll(open) {
       const tree = document.getElementById('wbsTree');
       tree.querySelectorAll('.tree-phase, .tree-activity').forEach(el => {
         open ? el.classList.add('open') : el.classList.remove('open');
+        const header = el.querySelector(':scope > .tree-phase-hd, :scope > .tree-act-hd');
+        if (header) header.setAttribute('aria-expanded', String(open));
       });
     }
 
