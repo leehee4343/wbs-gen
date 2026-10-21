@@ -1600,7 +1600,13 @@
           
           const testClient = getSupabaseClient();
           if (testClient) {
-            testClient.from('wbs_gen_projects').select('id').limit(1).then(({ error }) => {
+            // 확인하는 동안 진행 상태를 보이고, 응답이 없으면 10초에 끊음(IR-16)
+            btnSave.disabled = true; btnSave.textContent = '연결 확인 중…';
+            showToast('Supabase 연결을 확인하는 중...', 'info');
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('응답 시간 초과(10초)')), 10000));
+            Promise.race([testClient.from('wbs_gen_projects').select('id').limit(1), timeout])
+              .finally(() => { btnSave.disabled = false; btnSave.textContent = '저장'; })
+              .then(({ error }) => {
               if (error) {
                 showToast('연동 실패: ' + error.message, 'err');
                 localStorage.removeItem('WBS_SUPABASE_URL');
@@ -2513,11 +2519,14 @@
       // Supabase에서 첫 번째 프로젝트를 자동 로드 (프로젝트 미선택 브라우저용)
       function tryAutoLoadFirstProject(initId) {
         if (!client) { goToStart(); return; }
+        // 접속 실패는 "프로젝트 없음"과 구분해 알림 — 빈 화면만 보이지 않게(IR-16)
+        const notifyFail = msg => showToast('클라우드(Supabase)에 접속하지 못했습니다. 네트워크 또는 연결 설정을 확인하세요. (' + msg + ')', 'err');
         client.from('wbs_gen_projects').select('*').order('id').limit(1)
           .then(({ data, error }) => {
-            if (error || !data || data.length === 0) { goToStart(); return; }
+            if (error) { notifyFail(error.message); goToStart(); return; }
+            if (!data || data.length === 0) { goToStart(); return; }
             afterProjectLoaded(data[0], initId);
-          }).catch(() => goToStart());
+          }).catch(e => { notifyFail(e.message); goToStart(); });
       }
 
       // 숫자가 아닌 ?id=(abc, <script> 등)는 조회하지 않음 — NaN으로 조회하면 Supabase 400 오류(DF-014)
