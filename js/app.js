@@ -2486,13 +2486,19 @@
 
       if (savedProjId) {
         const load = client
-          ? client.from('wbs_gen_projects').select('*').eq('id', Number(savedProjId)).single()
-              .then(({ data, error }) => { if (error || !data) throw new Error('not found'); return data; })
+          ? client.from('wbs_gen_projects').select('*').eq('id', Number(savedProjId)).maybeSingle()
+              .then(({ data, error }) => {
+                if (data) return data;
+                // 프로젝트가 실제로 없을 때(0건, PGRST116)만 저장값을 지우고, 접속 오류면 다음 접속을 위해 유지(DF-019)
+                const err = new Error('not found');
+                err.notFound = !error || error.code === 'PGRST116';
+                throw err;
+              })
           : Promise.reject(new Error('no client'));
 
         load.then(proj => afterProjectLoaded(proj, initId))
-          .catch(() => {
-            localStorage.removeItem(GEN_PROJECT_KEY);
+          .catch(e => {
+            if (e && e.notFound) localStorage.removeItem(GEN_PROJECT_KEY);
             // localStorage의 프로젝트가 없어진 경우 → ?id= 역추적 또는 첫 프로젝트 자동 로드
             tryLoadByAnalysisId(initId, () => tryAutoLoadFirstProject(initId));
           });
