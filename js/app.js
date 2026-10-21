@@ -2095,6 +2095,21 @@
       }).catch(err => showToast('불러오기 오류: ' + err.message, 'err'));
     }
 
+    // 원본을 다시 분석한 결과가 저장 당시 요약과 다르면 경고 — 파싱 규칙이 바뀌어 결과가 달라진 것을 바로 알아차리게(DF-009 같은 사고 방지, IR-04)
+    function warnIfSummaryChanged(saved) {
+      if (!saved || saved.total == null) return;
+      const now = {
+        total: WBS_DATA.length,
+        planRate: +calcPlanRate().toFixed(1),
+        actualRate: +calcActualRate().toFixed(1)
+      };
+      const diffs = [];
+      if (now.total !== saved.total) diffs.push(`TASK ${saved.total}→${now.total}건`);
+      if (saved.planRate != null && Math.abs(now.planRate - saved.planRate) > 0.1) diffs.push(`계획 공정율 ${saved.planRate}→${now.planRate}%`);
+      if (saved.actualRate != null && Math.abs(now.actualRate - saved.actualRate) > 0.1) diffs.push(`실적 공정율 ${saved.actualRate}→${now.actualRate}%`);
+      if (diffs.length) showToast(`저장 당시 요약과 다시 분석한 결과가 다릅니다(${diffs.join(', ')}). 원본 파일 인식을 확인하세요.`, 'err');
+    }
+
     function loadAnalysisRecord(r, id) {
       let tasks = r.tasks;
       // 예전 버전에서 저장된 분석 결과는 계획 시트의 완료값을 들고 있을 수 있습니다.
@@ -2117,6 +2132,7 @@
       renderAll();
       showSaveBar(r.fileName, r.wbsDate, tasks.length);
       showToast(`"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})을 불러왔습니다.`, 'ok');
+      warnIfSummaryChanged(r.summary);
       updateUrlParam(r.localOnly ? null : id);   // 브라우저에만 저장된 결과는 공유 링크를 만들지 않음(IR-14)
       navigateTo('p-dash');
     }
