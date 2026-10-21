@@ -1134,6 +1134,8 @@
       return { rows: abs.slice(origin.r).map(row => (row || []).slice(origin.c)), origin };
     }
 
+    function oneLine(v) { return String(v).replace(/\s*\r?\n\s*/g, ' ').trim(); }
+
     function parseWbsWorkbook(workbook) {
       const planName = workbook.SheetNames.find(n => n.includes('계획')) || workbook.SheetNames[0];
       const actName  = workbook.SheetNames.find(n => n.includes('실적') || n.includes('실행'));
@@ -1168,8 +1170,9 @@
         const start       = row[11];  // L열: 시작
         const end         = row[12];  // M열: 계획완료
 
-        if (phase)    curPhase    = String(phase).replace(/\r\n/g, ' ').trim();
-        if (activity) curActivity = String(activity).replace(/\r\n/g, ' ').trim();
+        // 셀 안 줄바꿈(엑셀 Alt+Enter는 \n, 일부 파일은 \r\n)을 공백 하나로 바꿈 — 보고 텍스트가 줄에서 끊기지 않게(DF-020)
+        if (phase)    curPhase    = oneLine(phase);
+        if (activity) curActivity = oneLine(activity);
         if (!task || typeof task !== 'string') continue;
 
         // 실적 시트에서 동일 행 진척율 읽기
@@ -1184,9 +1187,9 @@
           : planProgress;   // 실적 시트 없으면 계획과 동일
 
         data.push({
-          phase: curPhase, activity: curActivity, task: task.trim(),
+          phase: curPhase, activity: curActivity, task: oneLine(task),
           weight: typeof weight === 'number' ? weight : 0,
-          deliverable: deliverable ? String(deliverable).replace(/\r\n/g, ' ') : '',
+          deliverable: deliverable ? oneLine(deliverable) : '',
           progress: planProgress,
           actualProgress,
           hasActual,
