@@ -882,7 +882,8 @@
         // 보내는 사람은 renderEjsStatus가 실제 전송값(발신 표시명·회신 이메일)으로 표시 — 구성원 이메일로 덮어쓰지 않음(IR-09)
 
         if (members.length === 0) {
-          const msg = `<span class="mail-chip-empty">등록된 구성원이 없습니다. <a onclick="navigateTo('p-members')">구성원 관리</a>에서 먼저 추가하세요.</span>`;
+          // href가 있어야 Tab으로 이동·Enter로 실행 가능(IR-13)
+          const msg = `<span class="mail-chip-empty">등록된 구성원이 없습니다. <a href="#p-members" onclick="navigateTo('p-members'); return false;">구성원 관리</a>에서 먼저 추가하세요.</span>`;
           toWrap.innerHTML = msg;
           ccWrap.innerHTML = msg;
           return;
@@ -954,6 +955,7 @@
       localStorage.setItem('ejs_reply_to', replyTo);
       renderEjsStatus();
       document.getElementById('ejsPanel').classList.remove('open');
+      document.querySelector('#ejsPanel .ejs-panel-hd').setAttribute('aria-expanded', 'false');
       showToast('EmailJS 설정이 저장되었습니다.', 'ok');
     }
     function clearEjsConfig() {
@@ -1002,7 +1004,9 @@
       if (fromAddr) fromAddr.textContent = cfg.replyTo || '회신 이메일 미설정';
     }
     function toggleEjsPanel() {
-      document.getElementById('ejsPanel').classList.toggle('open');
+      const open = document.getElementById('ejsPanel').classList.toggle('open');
+      // 화면낭독기에 펼침/접힘 상태 전달(IR-13)
+      document.querySelector('#ejsPanel .ejs-panel-hd').setAttribute('aria-expanded', String(open));
     }
 
     /* --- 메일 발송 --- */
