@@ -553,7 +553,8 @@
       const planRate = calcPlanRate();
       const actualRate = calcActualRate();
       // 표시 자릿수(소수 1자리)로 반올림해 '-0.0%p' 같은 표기를 막습니다.
-      const gap = Math.round((actualRate - planRate) * 10) / 10 || 0;
+      // 화면에 보이는 계획·실적(소수 1자리) 값의 차이로 계산해 분석 결과 카드(저장 요약)와 같은 값을 표시(DF-015)
+      const gap = Math.round((+actualRate.toFixed(1) - +planRate.toFixed(1)) * 10) / 10 || 0;
       document.getElementById('phPlanRate').textContent = planRate.toFixed(1) + '%';
       document.getElementById('phActualRate').textContent = actualRate.toFixed(1) + '%';
       document.getElementById('phGapRate').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%p';
