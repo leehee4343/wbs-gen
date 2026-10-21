@@ -1698,6 +1698,18 @@
         }
       }
 
+      // 필수 입력 검사 뒤 형식 검사 — 'abc' 같은 이메일, 글자가 섞인 연락처는 저장하지 않음(IR-05)
+      if (!isValidEmail(document.getElementById('mfEmail').value)) {
+        showToast('이메일 형식을 확인하세요. (예: name@example.com)', 'err');
+        document.getElementById('mfEmail').focus();
+        return;
+      }
+      if (!/^[0-9+\- ]{7,20}$/.test(document.getElementById('mfPhone').value.trim())) {
+        showToast('연락처는 숫자와 - 로 입력하세요. (예: 010-1234-5678)', 'err');
+        document.getElementById('mfPhone').focus();
+        return;
+      }
+
       const name  = document.getElementById('mfName').value.trim();
       const email = document.getElementById('mfEmail').value.trim();
       const editId = document.getElementById('mfEditId').value;
