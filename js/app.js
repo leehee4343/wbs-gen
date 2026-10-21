@@ -10,7 +10,10 @@
       const localUrl = localStorage.getItem('WBS_SUPABASE_URL');
       const localKey = localStorage.getItem('WBS_SUPABASE_ANON_KEY');
       if (localUrl && localKey) {
-        return { url: localUrl, anonKey: localKey };
+        // 배포 설정과 같은 프로젝트 주소면 배포 설정의 전용 스키마(wbs_gen)도 함께 사용 — 없으면 public을 찾아 연동 실패(DF-021)
+        const deployed = window.WBS_SUPABASE_CONFIG || {};
+        const schema = deployed.schema && deployed.url === localUrl ? deployed.schema : undefined;
+        return { url: localUrl, anonKey: localKey, schema };
       }
       if (window.WBS_SUPABASE_CONFIG && window.WBS_SUPABASE_CONFIG.url && window.WBS_SUPABASE_CONFIG.anonKey) {
         return window.WBS_SUPABASE_CONFIG;
