@@ -23,7 +23,8 @@
       const config = getSupabaseConfig();
       if (config.url && config.anonKey) {
         try {
-          _supabaseClient = supabase.createClient(config.url, config.anonKey);
+          // 배포 설정에 schema가 있으면 그 스키마의 테이블을 사용(Pro 프로젝트의 전용 스키마 wbs_gen)
+          _supabaseClient = supabase.createClient(config.url, config.anonKey, config.schema ? { db: { schema: config.schema } } : undefined);
           return _supabaseClient;
         } catch (e) {
           console.error("Supabase client init error:", e);

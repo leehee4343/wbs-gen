@@ -5,7 +5,9 @@
  * 민감한 관리자 비밀번호나 DB 마스터 키는 절대로 여기에 넣지 마세요.
  */
 window.WBS_SUPABASE_CONFIG = {
-  url: 'https://viusyktclcquljfnquwv.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpdXN5a3RjbGNxdWxqZm5xdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwOTg1ODcsImV4cCI6MjA5NzY3NDU4N30.JI_xZORgZRGjvoir0wpyrXNkdMWB6fUqfTIJzMzxEJc'
+  url: 'https://zbrmhutsgrhacepmjfau.supabase.co',
+  anonKey: 'sb_publishable_5YevQu8qGqPlagAlyxQBbQ_9Ciba5z9',
+  // Pro 조직 personal-projects 안의 이 프로그램 전용 스키마(다른 앱 스키마와 분리, 2026-10-21 이전)
+  schema: 'wbs_gen'
 };
 
