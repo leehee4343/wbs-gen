@@ -199,9 +199,10 @@ th.col-actions { width: 160px; }
   position: sticky;
   top: var(--header-height);
   z-index: 50;
-  align-self: flex-start;
+  /* 본문 높이에 맞춰 늘이되 화면 높이를 넘지 않음: 짧은 화면에서도 푸터가 뷰포트 맨 아래에 보이도록(가이드 4.4, DF-010) */
+  align-self: stretch;
   width: var(--sidebar-width);
-  height: calc(100vh - var(--header-height));
+  max-height: calc(100vh - var(--header-height));
   flex-shrink: 0;
   background: var(--bg-white);
   border-right: 1px solid var(--border-light);
