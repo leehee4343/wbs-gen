@@ -1428,7 +1428,8 @@
       const kind = type === 'ok' ? 'success' : (type === 'err' ? 'danger' : 'info');
       const stack = document.getElementById('toastStack');
       // 진행 안내(정보)·오류 토스트는 다음 알림으로 교체합니다(오류가 쌓여 버튼을 가리지 않도록, DF-011).
-      stack.querySelectorAll('.toast.info, .toast.danger').forEach(t => t.remove());
+      // 성공 토스트도 다음 성공 알림으로 교체 — 연속 저장 시 쌓여 [구성원 추가] 등을 가리지 않게. 오류는 성공 알림으로 지우지 않음(IR-07)
+      stack.querySelectorAll(kind === 'success' ? '.toast.info, .toast.success' : '.toast.info, .toast.danger').forEach(t => t.remove());
       const toast = document.createElement('div');
       toast.className = 'toast ' + kind;
       toast.setAttribute('role', kind === 'danger' ? 'alert' : 'status');
