@@ -978,6 +978,13 @@
           ? (cfg.source === 'deployment' ? '배포 설정 완료 — EmailJS 직접 발송' : '브라우저 설정 완료 — EmailJS 직접 발송')
           : '미설정 — 메일 앱으로 대체 발송';
       }
+      // 배포 설정이 있으면 이 브라우저에 저장한 값은 쓰이지 않음을 패널 안에 안내(IR-06)
+      const srcNote = document.getElementById('ejsSourceNote');
+      if (srcNote) {
+        srcNote.textContent = getEjsConfig().source === 'deployment'
+          ? '현재 배포 설정(config/emailjs.config.js)이 적용 중입니다. 이 브라우저에 저장한 값은 배포 설정이 없을 때만 쓰입니다.'
+          : '현재 이 브라우저에 저장한 설정이 적용 중입니다.';
+      }
       if (note) {
         note.textContent = ok
           ? '※ EmailJS를 통해 직접 발송됩니다.'
@@ -1558,7 +1565,9 @@
 
       const client = getSupabaseClient();
       if (client) {
-        badge.textContent = '연동 됨';
+        // 적용 중인 설정 출처 표시 — 브라우저 저장값이 배포 설정보다 우선(IR-06)
+        const fromBrowser = !!(localStorage.getItem('WBS_SUPABASE_URL') && localStorage.getItem('WBS_SUPABASE_ANON_KEY'));
+        badge.textContent = fromBrowser ? '연동 됨 — 브라우저 설정' : '연동 됨 — 배포 설정';
         badge.className = 'ejs-status-badge ok';
       } else {
         badge.textContent = '연동 안 됨';

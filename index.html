@@ -452,7 +452,7 @@
             </span>
             <div class="notice-body">
               <p>공용 데이터베이스(Supabase)를 연동하면 다른 브라우저나 기기에서도 URL 공유(<code>?id=숫자</code>)로 WBS 분석 데이터를 함께 조회할 수 있습니다.</p>
-              <p class="notice-note">배포 설정(<code>config/supabase.config.js</code>)이 있으면 자동으로 연동되며, 여기에서 입력한 값은 이 브라우저에만 저장됩니다.</p>
+              <p class="notice-note">배포 설정(<code>config/supabase.config.js</code>)이 있으면 자동으로 연동되며, 여기에서 입력한 값은 이 브라우저에만 저장되고 배포 설정보다 우선 적용됩니다.</p>
             </div>
           </div>
           <div class="ejs-fields">
@@ -639,6 +639,7 @@
                   <input type="email" id="ejsReplyTo" placeholder="예) pm@example.com">
                 </div>
               </div>
+              <p class="ejs-source-note" id="ejsSourceNote"></p>
               <div class="ejs-field-actions">
                 <button class="btn btn-secondary" type="button" onclick="clearEjsConfig()">브라우저 설정 초기화</button>
                 <button class="btn btn-critical-primary" type="button" onclick="saveEjsConfig()">이 브라우저에 저장</button>

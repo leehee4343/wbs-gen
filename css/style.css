@@ -1117,6 +1117,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .ejs-field { display: flex; flex-direction: column; gap: 6px; }
 .ejs-field input { width: 100%; }
 .ejs-field-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.ejs-source-note { margin: 12px 0 0; font-size: 13px; color: var(--text-muted); } /* 적용 중인 설정 출처 안내(IR-06) */
 
 .mail-form { display: flex; flex-direction: column; }
 .mail-row { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
