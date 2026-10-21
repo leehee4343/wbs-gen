@@ -2469,7 +2469,9 @@
           }).catch(() => goToStart());
       }
 
-      const initId = new URLSearchParams(window.location.search).get('id');
+      // 숫자가 아닌 ?id=(abc, <script> 등)는 조회하지 않음 — NaN으로 조회하면 Supabase 400 오류(DF-014)
+      const rawInitId = new URLSearchParams(window.location.search).get('id');
+      const initId = /^\d+$/.test(rawInitId || '') ? rawInitId : null;
       const savedProjId = localStorage.getItem(GEN_PROJECT_KEY);
 
       if (savedProjId) {
