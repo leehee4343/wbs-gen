@@ -282,6 +282,12 @@
       });
     }
 
+    // 가중치 반영 평균 진척율 — 단계별 현황과 WBS 전체 일정 트리가 같은 계산을 쓰도록 한 곳에 둠(IR-03)
+    function weightedProgress(tasks) {
+      const totalW = tasks.reduce((s, t) => s + (t.weight || 0), 0) || 1;
+      return Math.round(tasks.reduce((s, t) => s + (t.weight || 0) * t.progress, 0) / totalW);
+    }
+
     function hasProgressGap(t) {
       return t.actualProgress !== undefined && t.actualProgress < t.progress;
     }
@@ -357,7 +363,7 @@
         const done  = phaseTasks.filter(t => taskStatus(t) === 'done').length;
         const delay = phaseTasks.filter(t => taskStatus(t) === 'delay').length;
         const prog  = phaseTasks.filter(t => taskStatus(t) === 'progress').length;
-        const avgProg = total ? Math.round(phaseTasks.reduce((s, t) => s + t.progress, 0) / total) : 0;
+        const avgProg = total ? weightedProgress(phaseTasks) : 0;
 
         const isOpen = hasFilter ? 'open' : 'open'; // 기본 단계 펼침
         html += `
@@ -380,7 +386,7 @@
           const aDone  = tasks.filter(t => taskStatus(t) === 'done').length;
           const aDelay = tasks.filter(t => taskStatus(t) === 'delay').length;
           const aProg  = tasks.filter(t => taskStatus(t) === 'progress').length;
-          const aAvg   = tasks.length ? Math.round(tasks.reduce((s,t) => s + t.progress, 0) / tasks.length) : 0;
+          const aAvg   = tasks.length ? weightedProgress(tasks) : 0;
           const actOpen = hasFilter ? 'open' : '';
 
           html += `
@@ -489,8 +495,7 @@
         const doneCnt = tasks.filter(t => taskStatus(t) === 'done').length;
         const delayCnt = tasks.filter(t => taskStatus(t) === 'delay').length;
         const progCnt = tasks.filter(t => taskStatus(t) === 'progress').length;
-        const totalW = tasks.reduce((s, t) => s + (t.weight || 0), 0) || 1;
-        const avgProgress = Math.round(tasks.reduce((s, t) => s + (t.weight || 0) * t.progress, 0) / totalW);
+        const avgProgress = weightedProgress(tasks);
         html += `
     <div class="phase-group">
       <h3 class="phase-title">${esc(phase)}<span class="phase-count">${total}건</span></h3>
