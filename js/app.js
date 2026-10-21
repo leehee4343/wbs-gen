@@ -1860,8 +1860,17 @@
         if (isDelayByBaseline(t)) return 'delay';
         return isInProgress(t) ? 'progress' : 'upcoming';
       };
-      const delayTasks = data.filter(t => !isDone(t) && (isDelayByBaseline(t) || (isInProgress(t) && hasProgressGap(t))))
+      const delaySorted = data.filter(t => !isDone(t) && (isDelayByBaseline(t) || (isInProgress(t) && hasProgressGap(t))))
         .sort((a, b) => taskDelayDays(b) - taskDelayDays(a) || ((b.progress - (b.actualProgress ?? b.progress)) - (a.progress - (a.actualProgress ?? a.progress))));
+      // 지연 업무 화면과 같이 단계·활동으로 묶음(가장 심각한 업무가 있는 묶음부터, 묶음 안은 심각도 순) — 같은 단계 제목이 두 번 나오지 않게(DF-013)
+      const groupOrder = new Map();
+      delaySorted.forEach(t => {
+        if (!groupOrder.has(t.phase)) groupOrder.set(t.phase, new Map());
+        const acts = groupOrder.get(t.phase);
+        if (!acts.has(t.activity)) acts.set(t.activity, []);
+        acts.get(t.activity).push(t);
+      });
+      const delayTasks = [...groupOrder.values()].flatMap(acts => [...acts.values()].flat());
       const [nMon, nSun] = getWeekRange(addDays(baseline, 7));
       const nFri = addDays(nMon, 4);
       const tasks = data.filter(t => {
