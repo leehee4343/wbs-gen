@@ -571,7 +571,8 @@
       document.getElementById('phPlanRate').textContent = planRate.toFixed(1) + '%';
       document.getElementById('phActualRate').textContent = actualRate.toFixed(1) + '%';
       document.getElementById('phGapRate').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%p';
-      document.getElementById('phGapRate').style.color = gap < -0.5 ? 'var(--danger-text)' : 'var(--success-text)';
+      // 분석 결과 카드·상태 배지와 같은 3단계: -0.5 미만 빨강 / ±0.5 이내 기본색 / +0.5 초과 초록(IR-15)
+      document.getElementById('phGapRate').style.color = gap < -0.5 ? 'var(--danger-text)' : (gap > 0.5 ? 'var(--success-text)' : '');
       document.getElementById('phDelayCnt').textContent = delayTasks.length + '건';
       document.getElementById('phDelayCnt').style.color = delayTasks.length > 0 ? 'var(--danger-text)' : '';
       const mainLabel = document.getElementById('phMainLabel');
