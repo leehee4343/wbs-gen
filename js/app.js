@@ -193,16 +193,17 @@
         const gapClass = diff < 0 ? 'behind' : 'ahead';
         const gapStr = (diff > 0 ? '+' : '') + diff + '%p';
         const gapBadge = hasActual ? `<span class="gap-badge ${gapClass}">${gapStr}</span>` : '<span class="gap-badge behind">실적 미입력</span>';
+        // 막대 이름은 엑셀 값임을 드러내 대시보드 '계획 공정율'(경과일 기준)과 구분(IR-02)
         progressHtml = `
     <div class="dual-bar-wrap">
       <div class="dual-bar-row">
-        <span class="dual-bar-label">계획</span>
+        <span class="dual-bar-label" title="엑셀 계획 진척율(G열)">계획 진척</span>
         <div class="dual-bar-track"><div class="dual-bar-fill plan-fill" style="width:${t.progress}%"></div></div>
         <span class="dual-bar-pct">${t.progress}%</span>
       </div>
       <div class="dual-bar-sep"></div>
       <div class="dual-bar-row">
-        <span class="dual-bar-label">실적</span>
+        <span class="dual-bar-label" title="엑셀 실적 진척율(실적 시트 G열)">실적 진척</span>
         <div class="dual-bar-track"><div class="dual-bar-fill actual-fill" style="width:${actualValue}%"></div></div>
         <span class="dual-bar-pct">${hasActual ? actualValue + '%' : '-'}</span>
       </div>
@@ -1832,7 +1833,7 @@
     <div class="hs-item"><div class="hs-label">전체 TASK</div><div class="hs-value">${s.total}</div></div>
     <div class="hs-item"><div class="hs-label">완료</div><div class="hs-value c-green">${s.done}</div></div>
     <div class="hs-item"><div class="hs-label">지연</div><div class="hs-value ${s.delay > 0 ? 'c-red' : ''}">${s.delay}</div></div>
-    <div class="hs-item"><div class="hs-label">계획 공정율</div><div class="hs-value">${s.planRate}%</div></div>
+    <div class="hs-item"><div class="hs-label" title="기준일까지 경과일로 계산한 계획 진도(가중 합)">계획 공정율</div><div class="hs-value">${s.planRate}%</div></div>
     <div class="hs-item"><div class="hs-label">실적 공정율</div><div class="hs-value c-accent">${s.actualRate}%</div></div>
     <div class="hs-item"><div class="hs-label">Gap</div><div class="hs-value ${gapColor}">${gapStr}</div></div>
   </div>

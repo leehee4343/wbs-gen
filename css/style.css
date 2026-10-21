@@ -842,10 +842,10 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .t-meta .is-alert { color: var(--danger-text); }
 
 /* 계획 / 실적 이중 막대 */
-.dual-bar-wrap { display: flex; align-items: center; gap: 10px; width: 400px; flex-shrink: 0; }
+.dual-bar-wrap { display: flex; align-items: center; gap: 10px; width: 460px; flex-shrink: 0; } /* 막대 이름 '계획 진척'·'실적 진척'이 들어가도록 넓힘(IR-02) */
 .dual-bar-row { flex: 1; display: flex; align-items: center; gap: 6px; }
 .dual-bar-label { flex-shrink: 0; font-size: 13px; color: var(--text-muted); }
-.dual-bar-track { flex: 1; min-width: 50px; height: 8px; border-radius: var(--radius-full); background: var(--border-card); overflow: hidden; }
+.dual-bar-track { flex: 1; min-width: 40px; height: 8px; border-radius: var(--radius-full); background: var(--border-card); overflow: hidden; }
 .dual-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width .4s ease; }
 .plan-fill { background: var(--primary-blue); }
 .actual-fill { background: var(--point-green); }
@@ -1184,7 +1184,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
   .hist-stats { grid-column: 1 / -1; grid-row: 2; }
   .hist-footer { grid-column: 3; grid-row: 1; justify-self: end; }
   .hist-actions { grid-template-columns: repeat(4, auto); }
-  .dual-bar-wrap { width: 340px; }
+  .dual-bar-wrap { width: 400px; }
 }
 
 @media (max-width: 1280px) {
