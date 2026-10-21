@@ -1489,7 +1489,8 @@
               const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id });
               const saveLocal = localExisting ? genDbUpdate(localExisting.id, recWithPid) : genDbAdd(recWithPid);
               return saveLocal.then(id => {
-                showToast('클라우드 저장 실패 — 브라우저에만 저장됨: ' + err.message, '');
+                // 클라우드 미저장은 놓치면 안 되므로 3초 뒤 사라지는 안내가 아닌 오류 알림으로 표시(가이드 5.9, DF-018)
+                showToast('클라우드 저장 실패 — 브라우저에만 저장됨: ' + err.message, 'err');
                 updateHistoryCount();
                 populateFileSelect(id);
                 renderHistoryPage();
