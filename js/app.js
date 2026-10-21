@@ -2304,7 +2304,7 @@
     function updateProjectUI() {
       const name = _currentProject ? _currentProject.name : '프로젝트 미선택';
       const el = document.getElementById('sidebarProjectName');
-      if (el) el.textContent = name;
+      if (el) { el.textContent = name; el.title = name; }   // 말줄임된 긴 이름은 마우스 오버(title)로 전체 확인(가이드 긴 값 처리, DF-016)
       const h1 = document.getElementById('topbarProjectName');
       if (h1) h1.textContent = _currentProject ? `${_currentProject.name} — WBS 일정 분석` : 'WBS 일정 분석';
       document.title = _currentProject ? `${_currentProject.name} | WBS 일정 분석` : 'WBS 일정 분석';
