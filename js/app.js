@@ -1102,11 +1102,27 @@
     }
 
     // 시트의 사용 범위가 A1이 아닌 곳(빈 A열·빈 1행)에서 시작해도 셀 위치가 밀리지 않도록 A1부터 읽음(DF-006)
-    function sheetRows(sheet) {
-      if (!sheet || !sheet['!ref']) return [];
+    // 양식의 위치는 "TASK" 머리글 셀로 찾음: 머리글 행 = 9행, TASK 열 = D열이 되도록 기준점을 옮겨 반환.
+    // 머리글이 없으면 사용 범위 시작을 기준점으로 사용(운영 양식은 B2부터 시작, DF-009)
+    function sheetRows(sheet, origin) {
+      if (!sheet || !sheet['!ref']) return { rows: [], origin: null };
       const range = XLSX.utils.decode_range(sheet['!ref']);
+      const start = { r: range.s.r, c: range.s.c };
       range.s.r = 0; range.s.c = 0;
-      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null, range });
+      const abs = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null, range });
+      if (!origin) {
+        origin = start;
+        outer: for (let r = 0; r < Math.min(abs.length, 30); r++) {
+          const row = abs[r] || [];
+          for (let c = 0; c < row.length; c++) {
+            if (typeof row[c] === 'string' && row[c].trim().toUpperCase() === 'TASK' && r >= 8 && c >= 3) {
+              origin = { r: r - 8, c: c - 3 };
+              break outer;
+            }
+          }
+        }
+      }
+      return { rows: abs.slice(origin.r).map(row => (row || []).slice(origin.c)), origin };
     }
 
     function parseWbsWorkbook(workbook) {
@@ -1114,13 +1130,18 @@
       const actName  = workbook.SheetNames.find(n => n.includes('실적') || n.includes('실행'));
 
       const ws   = workbook.Sheets[planName];
-      const rows = sheetRows(ws);
+      const plan = sheetRows(ws);
+      const rows = plan.rows;
 
-      // 실적 시트 (없으면 null)
-      const actRows = actName
-        ? sheetRows(workbook.Sheets[actName])
-        : null;
+      // 실적 시트 (없으면 null). 실적 시트에 머리글이 없으면 계획 시트와 같은 위치로 읽음(DF-009)
+      let actRows = null;
+      if (actName) {
+        const act = sheetRows(workbook.Sheets[actName]);
+        const hasHeader = (act.rows[8] || []).some(v => typeof v === 'string' && v.trim().toUpperCase() === 'TASK');
+        actRows = hasHeader ? act.rows : sheetRows(workbook.Sheets[actName], plan.origin).rows;
+      }
 
+      // 아래 행·열 번호는 sheetRows 기준점(TASK 머리글 = 9행 D열) 기준
       // row[5][3] = "Today" 레이블, row[5][4] = 기준일 날짜
       const todayCell = (rows[5] || [])[4];
       const todayStr = excelDateToStr(todayCell) || null;
