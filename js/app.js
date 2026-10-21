@@ -818,11 +818,13 @@
       });
     }
 
+    // 메일 제목·인사말에 쓰는 담당자 정보 — 한 곳에서 바꾸도록 모음. 헤더 사용자명(index.html .user-profile)도 같은 값으로 맞춤(IR-09)
+    const MAIL_OWNER = { name: '이희성', title: '이사', email: 'leehee4343@gmail.com' };
     const MAIL_HEADER_NOTICE =
-      '안녕하세요. 이희성 이사입니다.\n' +
+      `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다.\n` +
       '금주 한 일과 차주 할일, 그리고 지연 업무에 대해서 안내드립니다.\n\n' +
       '해당 일정을 확인하신 후 파트(PM/기획, 개발, UI/UX) 차주 수요일까지 주간보고에 넣을 내용을 메일로 제출 부탁드립니다.\n\n' +
-      '메일 주소 : 이희성  leehee43@16block.com\n\n' +
+      `메일 주소 : ${MAIL_OWNER.name}  ${MAIL_OWNER.email}\n\n` +
       '-'.repeat(95) + '\n' +
       '1. 금주 진행 업무 : 금주(월~금) 진행한 업무 내역(자유 기재)\n' +
       '2. 차주 진행 업무 : 차주(월~금)에 진행할 업무 내역(자유 기재)\n' +
@@ -868,7 +870,7 @@
       renderEjsStatus();
       const subjectEl = document.getElementById('mailSubject');
       if (subjectEl && !subjectEl.value) {
-        subjectEl.value = '안녕하세요. 이희성 이사입니다. (차주 주간보고서 작성요청의 건)';
+        subjectEl.value = `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다. (차주 주간보고서 작성요청의 건)`;
       }
       mdbGetAll().then(members => {
         _mailTo.clear();
@@ -877,14 +879,7 @@
         const ccWrap = document.getElementById('mailCcChips');
         if (!toWrap || !ccWrap) return;
 
-        // 구성원 '이희성'의 이메일을 보내는 사람 주소로 표시
-        const sender = members.find(m => m.name === '이희성');
-        if (sender) {
-          const fromName = document.getElementById('mailFromName');
-          const fromAddr = document.getElementById('mailFromAddr');
-          if (fromName) fromName.textContent = sender.name;
-          if (fromAddr) fromAddr.textContent = sender.email;
-        }
+        // 보내는 사람은 renderEjsStatus가 실제 전송값(발신 표시명·회신 이메일)으로 표시 — 구성원 이메일로 덮어쓰지 않음(IR-09)
 
         if (members.length === 0) {
           const msg = `<span class="mail-chip-empty">등록된 구성원이 없습니다. <a onclick="navigateTo('p-members')">구성원 관리</a>에서 먼저 추가하세요.</span>`;
