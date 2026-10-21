@@ -1502,7 +1502,8 @@
             console.error('클라우드 저장 오류:', err);
             genDbGetAll().then(localAll => {
               const localExisting = localAll.find(r => r.fileName === CURRENT_SOURCE_NAME && r.project_id === _currentProject?.id);
-              const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id });
+              // 브라우저에만 저장된 결과는 표시해 두고 주소에 id를 넣지 않음 — 로컬 번호가 클라우드 ID와 겹쳐 공유 링크가 다른 결과를 가리키지 않게(IR-14)
+              const recWithPid = Object.assign({}, record, { project_id: _currentProject?.id, localOnly: true });
               const saveLocal = localExisting ? genDbUpdate(localExisting.id, recWithPid) : genDbAdd(recWithPid);
               return saveLocal.then(id => {
                 // 클라우드 미저장은 놓치면 안 되므로 3초 뒤 사라지는 안내가 아닌 오류 알림으로 표시(가이드 5.9, DF-018)
@@ -1510,7 +1511,7 @@
                 updateHistoryCount();
                 populateFileSelect(id);
                 renderHistoryPage();
-                updateUrlParam(id);
+                updateUrlParam(null);
               });
             }).catch(localErr => showToast('저장 오류: ' + localErr.message, 'err'));
           });
@@ -1520,7 +1521,7 @@
         const localMsg = _currentProject ? '이 브라우저에 저장되었습니다. (클라우드 미연동)' : '이 브라우저에만 저장되었습니다. (프로젝트 미선택)';
         genDbGetAll().then(all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && (r.project_id ?? null) === pid);
-          const recWithPid = Object.assign({}, record, { project_id: pid });
+          const recWithPid = Object.assign({}, record, { project_id: pid, localOnly: true });   // IR-14
           if (existing) {
             if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
             genDbUpdate(existing.id, recWithPid).then(id => {
@@ -1528,14 +1529,14 @@
               updateHistoryCount();
               populateFileSelect(id);
               renderHistoryPage();
-              updateUrlParam(id);
+              updateUrlParam(null);
             }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
           } else {
             genDbAdd(recWithPid).then(id => {
               showToast(localMsg, 'ok');
               updateHistoryCount();
               populateFileSelect(id);
-              updateUrlParam(id);
+              updateUrlParam(null);
             }).catch(err => showToast('저장 오류: ' + err.message, 'err'));
           }
         });
@@ -2037,6 +2038,13 @@
     }
 
     function copyAnalysisLink(id) {
+      // 브라우저에만 저장된 결과는 다른 브라우저에서 열 수 없고 번호가 클라우드 ID와 겹칠 수 있어 링크를 만들지 않음(IR-14)
+      genDbGet(id).catch(() => null).then(r => {
+        if (r && r.localOnly) { showToast('브라우저에만 저장된 결과는 공유 링크를 만들 수 없습니다. 클라우드에 저장한 뒤 복사하세요.', 'err'); return; }
+        copyAnalysisLinkUrl(id);
+      });
+    }
+    function copyAnalysisLinkUrl(id) {
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('id', id);
@@ -2103,7 +2111,7 @@
       renderAll();
       showSaveBar(r.fileName, r.wbsDate, tasks.length);
       showToast(`"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})을 불러왔습니다.`, 'ok');
-      updateUrlParam(id);
+      updateUrlParam(r.localOnly ? null : id);   // 브라우저에만 저장된 결과는 공유 링크를 만들지 않음(IR-14)
       navigateTo('p-dash');
     }
 
@@ -2150,6 +2158,8 @@
         const client = getSupabaseClient();
         const doDelete = () => {
           genDbDelete(id).catch(() => {});
+          // 지금 주소의 ?id=가 삭제한 결과면 주소에서 지움 — 새로고침·공유 시 없는 결과로 접속하지 않게(IR-14)
+          if (new URLSearchParams(window.location.search).get('id') === String(id)) updateUrlParam(null);
           showToast('삭제되었습니다.', '');
           updateHistoryCount();
           populateFileSelect();
