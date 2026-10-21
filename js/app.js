@@ -1402,8 +1402,8 @@
     function showToast(msg, type) {
       const kind = type === 'ok' ? 'success' : (type === 'err' ? 'danger' : 'info');
       const stack = document.getElementById('toastStack');
-      // 진행 안내(정보) 토스트는 다음 알림으로 교체합니다.
-      stack.querySelectorAll('.toast.info').forEach(t => t.remove());
+      // 진행 안내(정보)·오류 토스트는 다음 알림으로 교체합니다(오류가 쌓여 버튼을 가리지 않도록, DF-011).
+      stack.querySelectorAll('.toast.info, .toast.danger').forEach(t => t.remove());
       const toast = document.createElement('div');
       toast.className = 'toast ' + kind;
       toast.setAttribute('role', kind === 'danger' ? 'alert' : 'status');
