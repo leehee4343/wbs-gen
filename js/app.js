@@ -2324,6 +2324,8 @@
       closeProjModal();
       WBS_DATA = []; CURRENT_SOURCE_NAME = ''; CURRENT_FILE_BUFFER = null;
       TODAY = startOfDay(new Date());
+      // 이전 프로젝트의 파일 정보가 저장 바에 남지 않게 숨김 — 새 프로젝트의 최신 결과를 불러오면 다시 표시됨(IR-11)
+      document.getElementById('saveBar').classList.remove('visible');
       initFilters(); renderAll();
       updateHistoryCount(); populateFileSelect(); renderMembersPage();
       getCombinedHistoryList().then(all => {
