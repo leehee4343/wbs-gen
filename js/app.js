@@ -1892,13 +1892,14 @@
           badge.textContent = all.length; badge.hidden = !(all.length > 0);
         }
 
-        // SELECT 옵션 갱신 (wbsDate 오름차순, 중복 제거)
-        const dates = [...new Set(all.map(r => r.wbsDate))].sort((a, b) => a.localeCompare(b));
+        // SELECT 옵션 갱신 (wbsDate 내림차순 — 최신 기준일이 위, 중복 제거)
+        const dates = [...new Set(all.map(r => r.wbsDate))].sort((a, b) => b.localeCompare(a));
         sel.innerHTML = '<option value="">전체</option>' +
           dates.map(d => `<option value="${d}"${d === selectedDate ? ' selected' : ''}>${fmtDot(d)}</option>`).join('');
 
         const list = all.filter(r => !selectedDate || r.wbsDate === selectedDate)
-          .sort((a, b) => a.wbsDate.localeCompare(b.wbsDate));
+          // 최신 기준일이 맨 위(사용자 요청 2026-10-23, UI-10). 같은 기준일이면 최근 저장이 위
+          .sort((a, b) => b.wbsDate.localeCompare(a.wbsDate) || (b.savedAt || '').localeCompare(a.savedAt || ''));
 
         if (list.length === 0) {
           container.innerHTML = all.length === 0
