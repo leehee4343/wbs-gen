@@ -43,7 +43,7 @@
 
   /* 4.1 · 4.2 · 4.4 레이아웃 */
   --header-height: 56px;
-  --sidebar-width: 270px;
+  --sidebar-width: 210px;   /* 가이드 4.2 사이드바 210px(UI-02) */
   --sidebar-collapsed-width: 64px;
   --footer-height: 38px;
 
@@ -123,7 +123,7 @@ th.col-actions { width: 160px; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 12px 0 20px;
+  padding: 0 6px 0 16px;   /* 210px 안에 CI·시스템명·접기 버튼이 잘리지 않게(UI-02) */
   transition: width var(--transition-normal);
 }
 
@@ -131,8 +131,8 @@ th.col-actions { width: 160px; }
 .header-logo { height: 25px; max-width: 100%; object-fit: contain; flex-shrink: 0; }
 
 .sidebar-toggle {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -146,6 +146,11 @@ th.col-actions { width: 160px; }
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .sidebar-toggle:hover { background: var(--bg-hover); color: var(--primary-blue); }
+/* 접기 버튼: 회색 꺾쇠 — 펼친 상태 <(접기), 접힌 상태 >(펼치기)(UI-02) */
+.sidebar-toggle { color: var(--text-muted); }
+.sidebar-toggle .toggle-icon-open { display: none; }
+body.sidebar-collapsed .sidebar-toggle .toggle-icon-open { display: block; }
+body.sidebar-collapsed .sidebar-toggle .toggle-icon-close { display: none; }
 
 .system-name { font-size: 18px; font-weight: 800; letter-spacing: -.4px; color: var(--primary-blue); overflow: hidden; text-overflow: ellipsis; }
 
@@ -237,8 +242,7 @@ th.col-actions { width: 160px; }
 }
 .nav-item:hover { background: var(--bg-hover); color: var(--primary-blue); }
 .nav-item.active { background: var(--primary-light); color: var(--primary-blue); font-weight: 700; }
-.nav-item .icon { width: 20px; height: 20px; flex-shrink: 0; stroke: var(--primary-blue); }
-.nav-item.danger .icon { stroke: var(--point-red); }
+.nav-item .icon { width: 20px; height: 20px; flex-shrink: 0; stroke: url(#navIconGradient); }   /* 1Depth 아이콘 공통 블루→그린 그라데이션(UI-02) */
 .nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 .nav-count {
@@ -836,7 +840,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .task-bar-bg.delaybar .task-bar-fill { background: var(--point-red); }
 .task-bar-bg.donebar .task-bar-fill { background: var(--point-green); }
 .task-pct { margin-top: 4px; font-size: 13px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
-.task-date { width: 140px; flex-shrink: 0; font-size: 13px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.task-date { width: 172px; flex-shrink: 0; white-space: nowrap; font-size: 13px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 .phase-summary-row .task-bar-wrap { width: 260px; }
 .t-meta .is-alert { color: var(--danger-text); }
@@ -883,7 +887,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .tree-phase.open > .tree-phase-hd > .tree-chevron,
 .tree-activity.open > .tree-act-hd > .tree-chevron { transform: rotate(90deg); }
 .tree-phase-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: var(--text-title); }
-.tree-act-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; color: var(--text-title); }
+.tree-act-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 400; color: var(--text-main); }   /* 활동 행은 목록 항목 — 굵기·타이틀색은 단계 제목만(가이드 3.3, UI-09) */
 .tree-phase-meta, .tree-act-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .tree-chip { padding: 1px 8px; border: 1px solid transparent; border-radius: var(--radius-sm); font-size: 13px; font-weight: 400; white-space: nowrap; }
 .tc-total { background: var(--bg-hover); color: var(--text-main); border-color: var(--border-card); }
@@ -1005,6 +1009,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
   text-align: center;
   vertical-align: middle;
   white-space: nowrap;
+  line-height: 17px;   /* 패딩 11px×2 + 하단선과 합쳐 머리글 40px(가이드 5.3, UI-05) */
 }
 .data-table td {
   height: 44px;
@@ -1018,6 +1023,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
   word-break: keep-all;   /* 한글 단어 중간에서 끊지 않음(DF-012) */
 }
 .data-table td.cell-nowrap { white-space: nowrap; }
+.data-table td.cell-text { text-align: left; }   /* 파일명·이메일·설명은 좌측 정렬(가이드 5.3, UI-05) */
 .data-table :is(th, td) + :is(th, td) { border-left: 1px solid var(--table-column-divider); }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr:hover td { background: var(--bg-subtle); }
@@ -1113,7 +1119,9 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .ejs-status-badge.ok { background: var(--success-bg); color: var(--success-text); border-color: var(--success-line); }
 .ejs-status-badge.warn { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-line); }
 
-.ejs-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 20px; }
+.ejs-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }   /* 한 행 최대 2개(가이드 5.3.1·5.5, UI-06) */
+.ejs-fields.cols-1 { grid-template-columns: minmax(0, 1fr); }   /* 주소·키처럼 긴 값은 한 줄에 하나 */
+.ejs-fields .row-start { grid-column: 1; }
 .ejs-field { display: flex; flex-direction: column; gap: 6px; }
 .ejs-field input { width: 100%; }
 .ejs-field-actions { display: flex; justify-content: flex-end; gap: 8px; }
@@ -1191,14 +1199,12 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 @media (max-width: 1280px) {
   .kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .header-value { max-width: 160px; }
-  .task-date { width: 120px; }
 }
 
 @media (max-width: 1100px) {
   .header-sep-user, .user-profile { display: none; }
   .header-value { max-width: 120px; }
   .tally-grid, .ph-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ejs-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .task-row { flex-wrap: wrap; }
   .task-info { flex-basis: calc(100% - 80px); }
   .dual-bar-wrap, .task-bar-wrap, .phase-summary-row .task-bar-wrap { width: 100%; }
@@ -1227,4 +1233,61 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
   .breadcrumb { display: none; }
   .toast-stack { right: 16px; left: 16px; }
   .toast { min-width: 0; max-width: none; }
+}
+
+/* 숨김 SVG 정의(그라데이션) 컨테이너 */
+.svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* 의미 색은 클래스로(UI-03) */
+.nav-count[hidden] { display: none !important; }
+.tally-count.is-danger { color: var(--danger-text); }
+.tally-count.is-success { color: var(--success-text); }
+
+/* 확인·복사 모달(UI-04) */
+.modal-backdrop.modal-top { z-index: 1100; }
+.confirm-message { white-space: pre-line; }
+.copy-text { width: 100%; min-height: 160px; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--border-divider); border-radius: var(--control-radius); font: inherit; font-size: 13px; color: var(--text-main); background: #f8fafc; resize: vertical; }
+.modal-field-label { display: block; margin-top: 16px; font-size: 13px; color: var(--text-main); }
+
+/* 5.12 콘텐츠 블릿 — 5px 원형 #7c8ca0, 본문 간격 8px, 항목 사이 6px(UI-07) */
+.bullet-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bullet-list > li { position: relative; padding-left: 13px; }
+.bullet-list > li::before { content: ''; position: absolute; left: 0; top: .72em; width: 5px; height: 5px; border-radius: 50%; background: var(--text-sub); transform: translateY(-50%); }
+.notice-body ul.bullet-list { padding-left: 0; }
+
+/* 4.3 타이틀 옆 인쇄·PDF 저장 원형 버튼(UI-08) */
+.page-title-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.page-tools { display: inline-flex; align-items: center; gap: 6px; }
+.btn-page-tool {
+  width: 32px; height: 32px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-divider); border-radius: var(--radius-full);
+  background: #ffffff; color: var(--text-muted); cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+.btn-page-tool svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn-page-tool:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-light); }
+.btn-page-tool:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+
+/* 4.3 출력 규격 — 현재 화면(main)만 A4 가로, 여백 10mm, 배경·배지 색 유지, 조작 요소 제외(UI-08) */
+@page { size: A4 landscape; margin: 10mm; }
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #ffffff !important; }
+  .app-header, header, .sidebar, .app-footer, footer, .toast-stack, .modal-backdrop,
+  .breadcrumb, .page-tools, .btn, button, select, .save-bar, .upload-zone, .hist-toolbar,
+  .filter-bar, .card-meta a, .more-link, .ejs-panel, .mail-actions { display: none !important; }
+  .app-container { display: block !important; }
+  .main-content { padding: 0 !important; width: auto !important; }
+  .page.on { animation: none !important; gap: 10px; }
+  /* 세로 flex 묶음은 쪽 나눔 시 통째로 다음 쪽으로 밀리므로 출력에서는 블록 흐름으로 바꿈 */
+  .page.on, .phase-group { display: block !important; }
+  .page.on > * + * { margin-top: 10px; }
+  .phase-group > * + * { margin-top: 6px; }
+  .card { box-shadow: none !important; break-inside: auto; }
+  .task-row, .hist-card, .data-table tr, .notice-box, .tree-phase-hd { break-inside: avoid; }   /* 큰 묶음(단계 그룹)은 자르고 행·카드만 보호 */
+  .table-wrap { overflow: visible !important; }
+  .data-table thead { display: table-header-group; }
+  .data-table { font-size: 10.5px; }
+  .data-table :is(th, td) { word-break: keep-all; }
 }

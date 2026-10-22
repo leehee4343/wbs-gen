@@ -120,7 +120,8 @@
     function fmt(d) { if (!d) return '-'; const y = d.getFullYear(), m = ('0' + (d.getMonth() + 1)).slice(-2), dd = ('0' + d.getDate()).slice(-2); return `${y}-${m}-${dd}`; }
     // 화면 표시용 날짜 (가이드 7장: YYYY.MM.DD). 저장·비교용 값은 fmt()의 YYYY-MM-DD를 그대로 사용합니다.
     function fmtDot(v) { const s = v instanceof Date ? fmt(v) : (v || ''); return s ? s.replace(/-/g, '.') : '-'; }
-    function fmtShort(d) { if (!d) return '-'; const m = d.getMonth() + 1, dd = d.getDate(); const w = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]; return `${m}/${dd}(${w})`; }
+    // 화면 읽기용 날짜는 가이드 7장 YYYY.MM.DD(기간은 "YYYY.MM.DD ~ YYYY.MM.DD") — 예전 m/d(요일) 표기 대체(UI-01)
+    function fmtShort(d) { return d ? fmtDot(d) : '-'; }
     // 엑셀·사용자 입력값을 화면에 넣을 때 HTML 태그로 해석되지 않고 글자 그대로 보이게 함(DF-001)
     function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
     function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
@@ -577,9 +578,11 @@
       document.getElementById('phActualRate').textContent = actualRate.toFixed(1) + '%';
       document.getElementById('phGapRate').textContent = (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%p';
       // 분석 결과 카드·상태 배지와 같은 3단계: -0.5 미만 빨강 / ±0.5 이내 기본색 / +0.5 초과 초록(IR-15)
-      document.getElementById('phGapRate').style.color = gap < -0.5 ? 'var(--danger-text)' : (gap > 0.5 ? 'var(--success-text)' : '');
+      // 색은 인라인 style 대신 의미 클래스로(가이드 8장 인라인 스타일 금지, UI-03)
+      const gapEl = document.getElementById('phGapRate');
+      gapEl.classList.toggle('is-danger', gap < -0.5); gapEl.classList.toggle('is-success', gap > 0.5);
       document.getElementById('phDelayCnt').textContent = delayTasks.length + '건';
-      document.getElementById('phDelayCnt').style.color = delayTasks.length > 0 ? 'var(--danger-text)' : '';
+      document.getElementById('phDelayCnt').classList.toggle('is-danger', delayTasks.length > 0);
       const mainLabel = document.getElementById('phMainLabel');
       mainLabel.textContent = gap < -0.5 ? '계획 대비 지연 중' : (gap > 0.5 ? '계획 대비 선행 중' : '계획대로 진행 중');
       mainLabel.className = gap < -0.5 ? 'badge-danger' : (gap > 0.5 ? 'badge-success' : 'badge-info');
@@ -588,7 +591,7 @@
       document.getElementById('kpiDelay').closest('.kpi').classList.toggle('is-empty', delayTasks.length === 0);
       const circumference = 339.292;
       const offset = circumference - (circumference * Math.min(100, actualRate) / 100);
-      document.getElementById('gaugeFill').style.strokeDashoffset = offset;
+      document.getElementById('gaugeFill').setAttribute('stroke-dashoffset', offset);   // 인라인 style 대신 SVG 속성(UI-03)
 
       renderAllTable();
       renderPhaseSummary();
@@ -616,6 +619,44 @@
       btn.setAttribute('aria-expanded', String(!collapsed));
       btn.setAttribute('aria-label', collapsed ? '메뉴 펼치기' : '메뉴 접기');
     }
+
+    /* 확인 모달 — 브라우저 기본 confirm 대신(가이드 5.9·15.5, UI-04)
+       확인 버튼은 동작에 맞춰 Delete(삭제)·Primary(업데이트·초기화), 취소는 맨 오른쪽, 기본 포커스는 취소 */
+    let _confirmResolve = null, _confirmReturnFocus = null;
+    function confirmDialog(message, { title = '확인', okLabel = '확인', okClass = 'btn-primary' } = {}) {
+      if (_confirmResolve) _confirmResolve(false);
+      const overlay = document.getElementById('confirmOverlay');
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      const ok = document.getElementById('confirmOk');
+      ok.textContent = okLabel; ok.className = 'btn ' + okClass;
+      _confirmReturnFocus = document.activeElement;
+      setModalOpen(overlay, true);
+      setTimeout(() => document.getElementById('confirmCancel').focus(), 30);
+      return new Promise(resolve => { _confirmResolve = resolve; });
+    }
+    function resolveConfirm(value) {
+      const overlay = document.getElementById('confirmOverlay');
+      if (!overlay.classList.contains('open')) return;
+      setModalOpen(overlay, false);
+      const r = _confirmResolve; _confirmResolve = null;
+      if (_confirmReturnFocus && _confirmReturnFocus.focus) _confirmReturnFocus.focus();
+      if (r) r(value);
+    }
+    /* 복사 대체 모달 — 클립보드가 막힌 경우 브라우저 기본 prompt 대신(UI-04) */
+    function copyFallbackDialog(text, title = '복사할 내용') {
+      document.getElementById('copyTitle').textContent = title;
+      const ta = document.getElementById('copyText'); ta.value = text;
+      setModalOpen(document.getElementById('copyOverlay'), true);
+      setTimeout(() => { ta.focus(); ta.select(); }, 30);
+    }
+    function closeCopyDialog() { setModalOpen(document.getElementById('copyOverlay'), false); }
+    // 위에 열린 모달부터 Esc로 닫음 — 아래 모달의 Esc 처리보다 먼저(window 캡처 단계)
+    window.addEventListener('keydown', ev => {
+      if (ev.key !== 'Escape') return;
+      if (document.getElementById('confirmOverlay').classList.contains('open')) { ev.stopPropagation(); resolveConfirm(false); }
+      else if (document.getElementById('copyOverlay').classList.contains('open')) { ev.stopPropagation(); closeCopyDialog(); }
+    }, true);
 
     /* 모달 열림 상태 (가이드 5.8: 배경 스크롤 잠금 · aria-hidden 갱신) */
     function setModalOpen(overlay, open) {
@@ -701,6 +742,30 @@
 
     // 데이터가 없을 때의 자동 이동: 관리자 인증 상태에서만 WBS 업데이트, 아니면 대시보드(DF-003)
     function goToStart() { navigateTo(_authed ? 'p-upload' : 'p-dash'); }
+
+    /* 타이틀 옆 인쇄·PDF 저장 원형 버튼 — 화면마다 HTML로 만들지 않고 한 곳에서 주입(가이드 4.3, ? 매뉴얼은 사용자 결정으로 제외, UI-08) */
+    function initPageTools() {
+      const ICON_PRINT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6" /><rect x="3" y="9" width="18" height="8" rx="2" /><path d="M6 14h12v7H6z" /></svg>';
+      const ICON_PDF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6" /><path d="M12 12v6" /><path d="m9 15 3 3 3-3" /></svg>';
+      document.querySelectorAll('.page .page-header').forEach(header => {
+        const title = header.querySelector('.page-title');
+        if (!title || header.querySelector('.page-title-group')) return;
+        const group = document.createElement('div');
+        group.className = 'page-title-group';
+        title.replaceWith(group);
+        group.appendChild(title);
+        const tools = document.createElement('div');
+        tools.className = 'page-tools';
+        tools.innerHTML = `<button type="button" class="btn-page-tool" onclick="printPage(false)" title="인쇄" aria-label="현재 화면 인쇄">${ICON_PRINT}</button>`
+          + `<button type="button" class="btn-page-tool" onclick="printPage(true)" title="PDF 저장" aria-label="현재 화면 PDF 저장">${ICON_PDF}</button>`;
+        group.appendChild(tools);
+      });
+    }
+    // 인쇄·PDF는 헤더·메뉴·푸터를 뺀 현재 화면(main)만 A4 가로로 출력 — PDF는 브라우저 인쇄 창의 'PDF로 저장'을 사용
+    function printPage(asPdf) {
+      if (asPdf) showToast('인쇄 창의 대상에서 "PDF로 저장"을 선택해 주세요.', 'info');
+      setTimeout(() => window.print(), asPdf ? 300 : 0);
+    }
 
     function navigateTo(pageId) {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -962,8 +1027,8 @@
       document.querySelector('#ejsPanel .ejs-panel-hd').setAttribute('aria-expanded', 'false');
       showToast('EmailJS 설정이 저장되었습니다.', 'ok');
     }
-    function clearEjsConfig() {
-      if (!confirm('EmailJS 설정을 초기화하시겠습니까?')) return;
+    async function clearEjsConfig() {
+      if (!(await confirmDialog('EmailJS 설정을 초기화하시겠습니까?', { title: '설정 초기화', okLabel: '초기화' }))) return;
       ['ejs_pub','ejs_svc','ejs_tpl','ejs_from_name','ejs_reply_to'].forEach(k => localStorage.removeItem(k));
       document.getElementById('ejsPublicKey').value  = '';
       document.getElementById('ejsServiceId').value  = '';
@@ -1227,7 +1292,7 @@
       const now = new Date();
       const tstr = fmtDot(startOfDay(now)) + ' ' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${tstr}</td><td>${esc(filename)}</td><td>${count}</td><td>${ok ? '<span class="badge-success">적용 완료</span>' : '<span class="badge-danger">실패</span>'}</td>`;
+      tr.innerHTML = `<td>${tstr}</td><td class="cell-text">${esc(filename)}</td><td>${count}</td><td>${ok ? '<span class="badge-success">적용 완료</span>' : '<span class="badge-danger">실패</span>'}</td>`;
       tbody.prepend(tr);
     }
 
@@ -1408,9 +1473,9 @@
     }
 
     function deleteAllAnalyses() {
-      dbGetAll().then(all => {
+      dbGetAll().then(async all => {
         if (all.length === 0) { showToast('삭제할 저장 결과가 없습니다.', ''); return; }
-        if (!confirm(`저장된 분석 결과 ${all.length}건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+        if (!(await confirmDialog(`저장된 분석 결과 ${all.length}건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`, { title: '전체 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
         dbClear().then(() => {
           showToast('전체 삭제 완료', 'ok');
           updateHistoryCount();
@@ -1489,11 +1554,11 @@
 
       const client = getSupabaseClient();
       if (client) {
-        getCombinedHistoryList().then(all => {
+        getCombinedHistoryList().then(async all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME);
           const existingId = existing ? existing.id : null;
 
-          if (existingId && !confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
+          if (existingId && !(await confirmDialog(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`, { title: '업데이트 확인', okLabel: '업데이트' }))) return;
 
           showToast('클라우드에 저장하는 중...', 'info');
           supabaseAddOrUpdate(record, existingId).then(globalId => {
@@ -1524,11 +1589,11 @@
       } else {
         const pid = _currentProject?.id ?? null;
         const localMsg = _currentProject ? '이 브라우저에 저장되었습니다. (클라우드 미연동)' : '이 브라우저에만 저장되었습니다. (프로젝트 미선택)';
-        genDbGetAll().then(all => {
+        genDbGetAll().then(async all => {
           const existing = all.find(r => r.fileName === CURRENT_SOURCE_NAME && (r.project_id ?? null) === pid);
           const recWithPid = Object.assign({}, record, { project_id: pid, localOnly: true });   // IR-14
           if (existing) {
-            if (!confirm(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`)) return;
+            if (!(await confirmDialog(`같은 파일이 이미 등록되어 있습니다.\n업데이트 됩니다. 계속 진행하시겠습니까?`, { title: '업데이트 확인', okLabel: '업데이트' }))) return;
             genDbUpdate(existing.id, recWithPid).then(id => {
               showToast(localMsg, 'ok');
               updateHistoryCount();
@@ -1555,9 +1620,9 @@
         const label = document.getElementById('historyCountLabel');
         if (list.length > 0) {
           badge.textContent = list.length;
-          badge.style.display = 'inline-flex';
+          badge.hidden = false;
         } else {
-          badge.style.display = 'none';
+          badge.hidden = true;
         }
         if (label) label.textContent = `총 ${list.length}건`;
       });
@@ -1640,8 +1705,8 @@
       }
       
       if (btnClear) {
-        btnClear.addEventListener('click', () => {
-          if (!confirm('Supabase 클라우드 설정을 초기화하시겠습니까? (로컬 IndexedDB 데이터는 보존됩니다)')) return;
+        btnClear.addEventListener('click', async () => {
+          if (!(await confirmDialog('Supabase 클라우드 설정을 초기화하시겠습니까? (로컬 IndexedDB 데이터는 보존됩니다)', { title: '설정 초기화', okLabel: '초기화' }))) return;
           localStorage.removeItem('WBS_SUPABASE_URL');
           localStorage.removeItem('WBS_SUPABASE_ANON_KEY');
           _supabaseClient = null;
@@ -1755,10 +1820,10 @@
     }
 
     function deleteMember(id) {
-      mdbGetAll().then(all => {
+      mdbGetAll().then(async all => {
         const m = all.find(r => r.id === id);
         if (!m) return;
-        if (!confirm(`"${m.name}" (${m.email}) 구성원을 삭제하시겠습니까?`)) return;
+        if (!(await confirmDialog(`"${m.name}" (${m.email}) 구성원을 삭제하시겠습니까?`, { title: '구성원 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
         mdbDelete(id).then(() => {
           showToast('삭제되었습니다.', '');
           renderMembersPage();
@@ -1775,7 +1840,7 @@
       mdbGetAll().then(all => {
         const count = all.length;
         if (countLabel) countLabel.textContent = count;
-        if (navBadge) { navBadge.textContent = count; navBadge.style.display = count > 0 ? 'inline-flex' : 'none'; }
+        if (navBadge) { navBadge.textContent = count; navBadge.hidden = !(count > 0); }
 
         if (count === 0) {
           tbody.innerHTML = `<tr><td colspan="7" class="table-empty">등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.</td></tr>`;
@@ -1791,7 +1856,7 @@
             <td class="cell-nowrap">${esc(m.name)}</td>
             <td>${role}</td>
             <td class="cell-nowrap">${m.title ? esc(m.title) : dash}</td>
-            <td>${esc(m.email)}</td>
+            <td class="cell-text">${esc(m.email)}</td>
             <td class="cell-nowrap">${m.phone ? esc(m.phone) : dash}</td>
             <td><div class="member-actions">
               <button type="button" class="btn btn-secondary btn-row" onclick="editMember(${m.id})">수정</button>
@@ -1824,8 +1889,7 @@
         if (label) label.textContent = `총 ${all.length}건`;
         const badge = document.getElementById('navCountHistory');
         if (badge) {
-          if (all.length > 0) { badge.textContent = all.length; badge.style.display = 'inline-flex'; }
-          else badge.style.display = 'none';
+          badge.textContent = all.length; badge.hidden = !(all.length > 0);
         }
 
         // SELECT 옵션 갱신 (wbsDate 오름차순, 중복 제거)
@@ -2045,7 +2109,7 @@
 
       navigator.clipboard.writeText(text)
         .then(() => showToast(`금주 한 일 ${thisWeekTasks.length}건 · 차주 할 일 ${tasks.length}건 · 지연 업무 ${delayTasks.length}건 복사 완료`, 'ok'))
-        .catch(() => { prompt('아래 내용을 복사하세요:', text); });
+        .catch(() => { copyFallbackDialog(text, '보고 텍스트 복사'); });
     }
 
     function copyAnalysisLink(id) {
@@ -2062,7 +2126,7 @@
         navigator.clipboard.writeText(url.toString())
           .then(() => showToast('링크가 클립보드에 복사되었습니다.', 'ok'))
           .catch(() => {
-            prompt('아래 URL을 복사하세요:', url.toString());
+            copyFallbackDialog(url.toString(), '공유 링크 복사');
           });
       } catch(e) { showToast('URL 생성 오류', 'err'); }
     }
@@ -2179,9 +2243,9 @@
     }
 
     function doDeleteAnalysis(id) {
-      genDbGet(id).then(r => {
+      genDbGet(id).then(async r => {
         const labelName = r ? `"${r.fileName}" (기준일 ${r.wbsDate})` : `ID ${id}번 레코드`;
-        if (!confirm(`${labelName} 저장 결과를 삭제하시겠습니까?`)) return;
+        if (!(await confirmDialog(`${labelName} 저장 결과를 삭제하시겠습니까?`, { title: '분석 결과 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
         const client = getSupabaseClient();
         const doDelete = () => {
           genDbDelete(id).catch(() => {});
@@ -2432,8 +2496,8 @@
       });
     }
 
-    function deleteProjConfirm(id) {
-      if (!confirm(`본 프로젝트를 삭제하면 프로젝트 내 연관 데이터(파일, 구성원 정보 등)가 전부 삭제됩니다. 진행하시겠습니까?`)) return;
+    async function deleteProjConfirm(id) {
+      if (!(await confirmDialog(`본 프로젝트를 삭제하면 프로젝트 내 연관 데이터(파일, 구성원 정보 등)가 전부 삭제됩니다. 진행하시겠습니까?`, { title: '프로젝트 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
       const client = getSupabaseClient();
       if (!client) { showToast('Supabase 연결이 필요합니다.', 'err'); return; }
       client.from('wbs_gen_projects').delete().eq('id', id).then(({ error }) => {
@@ -2580,3 +2644,5 @@
     }).catch(() => {
       goToStart();
     });
+
+    initPageTools();

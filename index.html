@@ -19,6 +19,10 @@
 </head>
 
 <body>
+  <!-- 왼쪽 메뉴 1Depth 아이콘 공통 그라데이션: Critical Primary와 같은 블루→그린 대각선(가이드 15.1·v2.69 적용, UI-02) -->
+  <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="navIconGradient" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="#1976d2" /><stop offset="1" stop-color="#10b981" /></linearGradient></defs>
+  </svg>
 
   <!-- ===== 상단 헤더 ===== -->
   <header class="top-header">
@@ -28,9 +32,8 @@
         <span class="system-name">WBS 일정 분석</span>
       </div>
       <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" aria-label="메뉴 접기" aria-expanded="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
+        <svg class="toggle-icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        <svg class="toggle-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
       </button>
     </div>
     <div class="header-right">
@@ -71,7 +74,7 @@
             <path d="M12 8v4l3 3M3.05 11a9 9 0 1 0 .5-3M3 4v4h4" />
           </svg>
           <span class="nav-label">분석 결과 조회</span>
-          <span class="nav-count" id="navCountHistory" style="display:none">0</span>
+          <span class="nav-count" id="navCountHistory" hidden>0</span>
         </div>
 
         <div class="nav-section-label">업무 알림</div>
@@ -112,7 +115,7 @@
         </div>
         <div class="nav-item" data-page="p-phase" title="단계별 현황">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12l9-9 9 9M5 10v10h14V10" />
+            <path d="M12 3 2 8l10 5 10-5-10-5Z" /><path d="m2 13 10 5 10-5" /><path d="m2 18 10 5 10-5" />
           </svg>
           <span class="nav-label">단계별 현황</span>
         </div>
@@ -123,7 +126,7 @@
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
           <span class="nav-label">구성원 관리</span>
-          <span class="nav-count" id="navCountMembers" style="display:none">0</span>
+          <span class="nav-count" id="navCountMembers" hidden>0</span>
         </div>
         <div class="nav-item" data-page="p-mail" title="메일 보내기">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -455,12 +458,12 @@
               <p class="notice-note">배포 설정(<code>config/supabase.config.js</code>)이 있으면 자동으로 연동되며, 여기에서 입력한 값은 이 브라우저에만 저장되고 배포 설정보다 우선 적용됩니다.</p>
             </div>
           </div>
-          <div class="ejs-fields">
+          <div class="ejs-fields cols-1">
             <div class="ejs-field">
               <label for="sbUrl">Supabase Project API URL</label>
               <input type="text" id="sbUrl" placeholder="https://xyz.supabase.co">
             </div>
-            <div class="ejs-field col-span-2">
+            <div class="ejs-field">
               <label for="sbKey">Supabase Project API Anon Key</label>
               <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
             </div>
@@ -608,13 +611,13 @@
                 </span>
                 <div class="notice-body">
                   <p class="notice-lead">배포 시에는 저장소의 <code>config/emailjs.config.js</code>에 설정을 입력하면 모든 사용자가 실제 메일을 발송할 수 있습니다.</p>
-                  <ol>
+                  <ul class="bullet-list">
                     <li><a href="https://www.emailjs.com" target="_blank" rel="noopener">emailjs.com</a>에서 무료로 가입합니다(월 200건 무료).</li>
                     <li>Email Services 탭에서 Add New Service를 눌러 Naver 또는 Gmail을 SMTP로 연결합니다.</li>
                     <li>Email Templates 탭에서 템플릿을 만들고 To <code>{{to_email}}</code> · CC <code>{{cc_email}}</code> · Subject <code>{{subject}}</code> · Body <code>{{message}}</code> · Reply-to <code>{{reply_to}}</code> 변수를 사용합니다. 서식 포함 본문은 <code>{{{message_html}}}</code>을 사용합니다.</li>
-                    <li>Account → API Keys에서 Public Key를 복사합니다.</li>
+                    <li>Account 메뉴의 API Keys에서 Public Key를 복사합니다.</li>
                     <li>설정 파일을 채우기 전에는 아래에 Public Key · Service ID · Template ID를 입력하고 이 브라우저에 저장을 눌러 주세요.</li>
-                  </ol>
+                  </ul>
                 </div>
               </div>
               <div class="ejs-fields">
@@ -630,7 +633,7 @@
                   <label for="ejsTemplateId">Template ID<span class="required">*</span></label>
                   <input type="text" id="ejsTemplateId" placeholder="예) template_xxxxxxx">
                 </div>
-                <div class="ejs-field">
+                <div class="ejs-field row-start">
                   <label for="ejsFromName">발신 표시명 <span class="optional">(선택)</span></label>
                   <input type="text" id="ejsFromName" placeholder="예) PMS·SRM 일정관리">
                 </div>
@@ -768,6 +771,51 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" type="button" onclick="closeProjModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 확인 모달: 브라우저 기본 confirm 대신(가이드 5.9 확인은 모달, 15.5 confirmDialog 형식, UI-04) -->
+  <div id="confirmOverlay" class="modal-backdrop modal-top" onclick="if(event.target===this)resolveConfirm(false)" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="confirmTitle">확인</h2>
+        <button class="modal-close" type="button" onclick="resolveConfirm(false)" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice-box warning" role="note">
+          <span class="notice-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 10v4" /><path d="M12 17h.01" /></svg>
+          </span>
+          <div class="notice-body"><p class="confirm-message" id="confirmMessage"></p></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="button" id="confirmOk" onclick="resolveConfirm(true)">확인</button>
+        <button class="btn btn-secondary" type="button" id="confirmCancel" onclick="resolveConfirm(false)">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 복사 대체 모달: 클립보드 사용이 막힌 경우 브라우저 기본 prompt 대신(UI-04) -->
+  <div id="copyOverlay" class="modal-backdrop modal-top" onclick="if(event.target===this)closeCopyDialog()" role="dialog" aria-modal="true" aria-labelledby="copyTitle" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="copyTitle">복사할 내용</h2>
+        <button class="modal-close" type="button" onclick="closeCopyDialog()" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice-box info" role="note">
+          <span class="notice-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></svg>
+          </span>
+          <div class="notice-body"><p>이 브라우저에서는 자동 복사가 막혀 있습니다. 아래 내용을 선택해 복사(Ctrl+C 또는 ⌘+C)해 주세요.</p></div>
+        </div>
+        <label class="modal-field-label" for="copyText">내용</label>
+        <textarea id="copyText" class="copy-text" readonly rows="8"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" onclick="closeCopyDialog()">닫기</button>
       </div>
     </div>
   </div>
