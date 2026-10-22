@@ -9,7 +9,7 @@ https://github.com/leehee4343/wbs-gen
 
 ▶ 배포일
 최초 2026-06-27
-최종 2026-10-22 (커밋 a7506dd — DB 이전(Pro personal-projects / wbs_gen) 및 회귀 테스트 결함 DF-021 조치 반영)
+최종 2026-10-22 (커밋 67bb59f — 디자인 가이드 v2.69 재점검 반영(UI-01~09), DB 이전·DF-021 포함)
 
 ▶ 참고
 - GitHub Pages 첫 빌드는 수 분 소요될 수 있습니다.
