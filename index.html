@@ -60,7 +60,7 @@
     <!-- ===== 사이드바 ===== -->
     <aside class="sidebar">
       <nav aria-label="주 메뉴">
-        <div class="nav-section-label">업무 알림</div>
+        <div class="nav-section-label">일정/공정율 분석</div>
         <div class="nav-item active" data-page="p-dash" title="대시보드">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" />
@@ -88,19 +88,11 @@
           <span class="nav-label">지연 업무</span>
           <span class="nav-count" id="navCountDelay">0</span>
         </div>
-
-        <div class="nav-section-label">전체 일정</div>
         <div class="nav-item" data-page="p-all" title="WBS 전체 일정">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" />
           </svg>
           <span class="nav-label">WBS 전체 일정</span>
-        </div>
-        <div class="nav-item" data-page="p-phase" title="단계별 현황">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3 2 8l10 5 10-5-10-5Z" /><path d="m2 13 10 5 10-5" /><path d="m2 18 10 5 10-5" />
-          </svg>
-          <span class="nav-label">단계별 현황</span>
         </div>
 
         <div class="nav-section-label">관리자 전용 서비스</div>
@@ -130,11 +122,11 @@
           <span class="nav-label">구성원 관리</span>
           <span class="nav-count" id="navCountMembers" hidden>0</span>
         </div>
-        <div class="nav-item" data-page="p-mail" title="메일 보내기">
+        <div class="nav-item" data-page="p-mail" title="일정 관련 메일보내기">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
           </svg>
-          <span class="nav-label">메일 보내기</span>
+          <span class="nav-label">일정 관련 메일보내기</span>
         </div>
       </nav>
     </aside>
@@ -148,7 +140,7 @@
           <h1 class="page-title">대시보드</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">업무 알림</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="breadcrumb-item">일정/공정율 분석</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item current" aria-current="page">대시보드</li>
           </ol>
         </div>
@@ -219,7 +211,7 @@
               <div class="k-value"><span id="kpiDelay">0</span><span class="k-unit">건</span></div>
             </div>
           </a>
-          <a class="kpi green" href="#" data-nav="p-phase" title="단계별 현황 화면으로 이동">
+          <a class="kpi green" href="#" data-nav="p-all" title="WBS 전체 일정 화면으로 이동">
             <span class="icon-circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
             <div class="k-info">
               <div class="k-label">완료 TASK</div>
@@ -265,7 +257,7 @@
           <h1 class="page-title">금주 한 일</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">업무 알림</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="breadcrumb-item">일정/공정율 분석</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item current" aria-current="page">금주 한 일</li>
           </ol>
         </div>
@@ -284,7 +276,7 @@
           <h1 class="page-title">차주 할 일</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">업무 알림</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="breadcrumb-item">일정/공정율 분석</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item current" aria-current="page">차주 할 일</li>
           </ol>
         </div>
@@ -309,7 +301,7 @@
           <h1 class="page-title">지연 업무</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">업무 알림</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="breadcrumb-item">일정/공정율 분석</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item current" aria-current="page">지연 업무</li>
           </ol>
         </div>
@@ -328,7 +320,7 @@
           <h1 class="page-title">WBS 전체 일정</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">전체 일정</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="breadcrumb-item">일정/공정율 분석</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item current" aria-current="page">WBS 전체 일정</li>
           </ol>
         </div>
@@ -348,8 +340,9 @@
               <input type="text" id="filterKeyword" placeholder="TASK명 검색" aria-label="TASK명 검색">
             </div>
             <div class="tree-ctrl-bar">
-              <button class="btn btn-secondary" type="button" onclick="setTreeAll(true)">전체 펼치기</button>
-              <button class="btn btn-secondary" type="button" onclick="setTreeAll(false)">전체 접기</button>
+              <button class="btn btn-secondary" type="button" data-depth="phase" aria-pressed="false" onclick="setTreeDepth('phase')">단계만 보기</button>
+              <button class="btn btn-secondary" type="button" data-depth="activity" aria-pressed="false" onclick="setTreeDepth('activity')">활동까지 보기</button>
+              <button class="btn btn-secondary" type="button" data-depth="task" aria-pressed="false" onclick="setTreeDepth('task')">세부업무까지 보기</button>
             </div>
           </div>
           <div id="wbsTree" class="wbs-tree"></div>
@@ -359,25 +352,6 @@
             <span><i class="lg-progress"></i>진행중</span>
             <span><i class="lg-upcoming"></i>예정</span>
           </div>
-        </div>
-      </section>
-
-      <!-- ================= 단계별 현황 ================= -->
-      <section class="page" id="p-phase">
-        <div class="page-header">
-          <h1 class="page-title">단계별 현황</h1>
-          <ol class="breadcrumb" aria-label="현재 위치">
-            <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item">전체 일정</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item current" aria-current="page">단계별 현황</li>
-          </ol>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">단계별 진척 현황</h2>
-            <div class="card-meta">가중치 기준 공정율</div>
-          </div>
-          <div id="phaseSummary"></div>
         </div>
       </section>
 
@@ -436,43 +410,50 @@
                   <th>파일명</th>
                   <th>인식 TASK (건)</th>
                   <th>상태</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody id="uploadHistoryBody">
-                <tr><td colspan="4" class="table-empty">업로드한 이력이 없습니다.</td></tr>
+                <tr><td colspan="5" class="table-empty">업로드한 이력이 없습니다.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <!-- Supabase 클라우드 연동 -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Supabase 클라우드 연동</h2>
-            <span class="ejs-status-badge warn" id="supabaseStatusBadge">연동 안 됨</span>
-          </div>
-          <div class="notice-box info" role="note">
-            <span class="notice-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></svg>
+        <div class="ejs-panel panel-card" id="sbPanel">
+          <div class="ejs-panel-hd" onclick="toggleSettingsPanel('sbPanel')" role="button" tabindex="0" aria-controls="sbPanelBody" aria-expanded="false"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSettingsPanel('sbPanel');}">
+            <span class="ejs-panel-hd-left">Supabase 클라우드 연동</span>
+            <span class="ejs-panel-hd-right">
+              <span class="ejs-status-badge warn" id="supabaseStatusBadge">연동 안 됨</span>
+              <svg class="ejs-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
             </span>
-            <div class="notice-body">
-              <p>공용 데이터베이스(Supabase)를 연동하면 다른 브라우저나 기기에서도 URL 공유(<code>?id=숫자</code>)로 WBS 분석 데이터를 함께 조회할 수 있습니다.</p>
-              <p class="notice-note">배포 설정(<code>config/supabase.config.js</code>)이 있으면 자동으로 연동되며, 여기에서 입력한 값은 이 브라우저에만 저장되고 배포 설정보다 우선 적용됩니다.</p>
-            </div>
           </div>
-          <div class="ejs-fields cols-1">
-            <div class="ejs-field">
-              <label for="sbUrl">Supabase Project API URL</label>
-              <input type="text" id="sbUrl" placeholder="https://xyz.supabase.co">
+          <div class="ejs-panel-body" id="sbPanelBody">
+            <div class="notice-box info" role="note">
+              <span class="notice-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></svg>
+              </span>
+              <div class="notice-body">
+                <p>공용 데이터베이스(Supabase)를 연동하면 다른 브라우저나 기기에서도 URL 공유(<code>?id=숫자</code>)로 WBS 분석 데이터를 함께 조회할 수 있습니다.</p>
+                <p class="notice-note">배포 설정(<code>config/supabase.config.js</code>)이 있으면 자동으로 연동되며, 여기에서 입력한 값은 이 브라우저에만 저장되고 배포 설정보다 우선 적용됩니다.</p>
+              </div>
             </div>
-            <div class="ejs-field">
-              <label for="sbKey">Supabase Project API Anon Key</label>
-              <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            <div class="ejs-fields cols-1">
+              <div class="ejs-field">
+                <label for="sbUrl">Supabase Project API URL</label>
+                <input type="text" id="sbUrl" placeholder="https://xyz.supabase.co">
+              </div>
+              <div class="ejs-field">
+                <label for="sbKey">Supabase Project API Anon Key</label>
+                <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+              </div>
             </div>
-          </div>
-          <div class="ejs-field-actions">
-            <button class="btn btn-secondary" type="button" id="btnSbClear">초기화</button>
-            <button class="btn btn-critical-primary" type="button" id="btnSbSave">저장</button>
+            <div class="ejs-field-actions">
+              <button class="btn btn-secondary" type="button" id="btnSbClear">초기화</button>
+              <button class="btn btn-critical-primary" type="button" id="btnSbSave">저장</button>
+            </div>
           </div>
         </div>
       </section>
@@ -490,7 +471,7 @@
         <div class="card">
           <div class="hist-toolbar">
             <label class="hist-toolbar-label" for="histSearchName">기준일</label>
-            <select id="histSearchName" onchange="renderHistoryPage()">
+            <select id="histSearchName" onchange="resetListPage('history'); renderHistoryPage()">
               <option value="">전체</option>
             </select>
             <button class="btn btn-secondary" type="button" onclick="resetHistSearch()">초기화</button>
@@ -525,12 +506,23 @@
             </div>
           </div>
 
+          <div class="filter-row member-filter-row">
+            <select id="memberFilterProject" aria-label="프로젝트" onchange="onMemberFilterProjectChange(this.value)"></select>
+            <input type="text" id="memberFilterKeyword" placeholder="프로젝트, 이름, 역할, 직책, 이메일, 연락처 검색" aria-label="구성원 검색" oninput="resetListPage('members'); renderMemberTable()">
+          </div>
+
           <!-- 추가/수정 폼 -->
           <div class="member-form-panel" id="memberFormPanel">
             <h4 id="memberFormTitle">구성원 추가</h4>
             <input type="hidden" id="mfEditId">
             <input type="hidden" id="mfCreatedAt">
             <div class="member-form-grid">
+              <div class="mf-group col-full" id="mfImportGroup">
+                <label for="mfImport">기존 구성원 불러오기</label>
+                <select id="mfImport" onchange="applyMemberImport(this.value)">
+                  <option value="">다른 프로젝트의 구성원 선택</option>
+                </select>
+              </div>
               <div class="mf-group">
                 <label for="mfName">이름<span class="required">*</span></label>
                 <input type="text" id="mfName" placeholder="홍길동">
@@ -545,7 +537,7 @@
               </div>
               <div class="mf-group">
                 <label for="mfPhone">연락처<span class="required">*</span></label>
-                <input type="text" id="mfPhone" placeholder="010-0000-0000">
+                <input type="tel" id="mfPhone" inputmode="numeric" placeholder="숫자만 입력 (예: 01012345678)" onblur="this.value = formatMobile(this.value)">
               </div>
               <div class="mf-group col-full">
                 <label for="mfEmail">이메일<span class="required">*</span></label>
@@ -564,6 +556,7 @@
               <thead>
                 <tr>
                   <th class="col-num">번호</th>
+                  <th>프로젝트</th>
                   <th>이름</th>
                   <th>역할</th>
                   <th>직책</th>
@@ -573,21 +566,21 @@
                 </tr>
               </thead>
               <tbody id="memberTableBody">
-                <tr><td colspan="7" class="table-empty">등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.</td></tr>
+                <tr><td colspan="8" class="table-empty">등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ================= 메일 보내기 ================= -->
+      <!-- ================= 일정 관련 메일보내기 ================= -->
       <section class="page" id="p-mail">
         <div class="page-header">
-          <h1 class="page-title">메일 보내기</h1>
+          <h1 class="page-title">일정 관련 메일보내기</h1>
           <ol class="breadcrumb" aria-label="현재 위치">
             <li class="breadcrumb-item">홈</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
             <li class="breadcrumb-item">관리자 전용 서비스</li><li class="breadcrumb-separator" aria-hidden="true">&gt;</li>
-            <li class="breadcrumb-item current" aria-current="page">메일 보내기</li>
+            <li class="breadcrumb-item current" aria-current="page">일정 관련 메일보내기</li>
           </ol>
         </div>
 
@@ -598,8 +591,8 @@
 
           <!-- EmailJS 발송 설정 패널 -->
           <div class="ejs-panel" id="ejsPanel">
-            <div class="ejs-panel-hd" onclick="toggleEjsPanel()" role="button" tabindex="0" aria-controls="ejsPanelBody" aria-expanded="false"
-                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleEjsPanel();}">
+            <div class="ejs-panel-hd" onclick="toggleSettingsPanel('ejsPanel')" role="button" tabindex="0" aria-controls="ejsPanelBody" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSettingsPanel('ejsPanel');}">
               <span class="ejs-panel-hd-left">EmailJS 발송 설정</span>
               <span class="ejs-panel-hd-right">
                 <span class="ejs-status-badge warn" id="ejsStatusBadge">미설정 — 메일 앱으로 대체 발송</span>
@@ -637,7 +630,7 @@
                 </div>
                 <div class="ejs-field row-start">
                   <label for="ejsFromName">발신 표시명 <span class="optional">(선택)</span></label>
-                  <input type="text" id="ejsFromName" placeholder="예) PMS·SRM 일정관리">
+                  <input type="text" id="ejsFromName" placeholder="예) 프로젝트 일정관리">
                 </div>
                 <div class="ejs-field">
                   <label for="ejsReplyTo">회신 이메일 <span class="optional">(선택)</span></label>
@@ -656,7 +649,7 @@
             <div class="mail-row">
               <label>보내는 사람</label>
               <div class="mail-from-box">
-                <span id="mailFromName">프로젝트 일정관리</span>
+                <span id="mailFromName" hidden></span>
                 <span class="mail-from-addr" id="mailFromAddr">EmailJS 연결 계정</span>
               </div>
             </div>
@@ -675,9 +668,7 @@
             <div class="mail-row mail-body-row">
               <div class="mail-body-heading">
                 <label>내용<span class="required">*</span></label>
-                <select class="mail-baseline-select" id="mailBaselineSelect" onchange="fillMailBodyFromBaseline(this.value)" aria-label="본문에 넣을 기준일">
-                  <option value="current">기준일 선택 — 현재 분석</option>
-                </select>
+                <button class="btn btn-secondary" type="button" onclick="openMailBaselineModal()">기준일별로 메일 제목/내용 불러오기</button>
               </div>
               <div class="mail-editor" id="mailBody"></div>
             </div>
@@ -701,8 +692,36 @@
 
   <footer class="app-footer">&copy; 2026 WBS 일정 분석. All Rights Reserved.</footer>
 
+  <!-- ===== 기준일별 메일 제목/내용 불러오기 ===== -->
+  <div id="mailBaselineOverlay" class="modal-backdrop" onclick="if(event.target===this)closeMailBaselineModal()" role="dialog" aria-modal="true" aria-labelledby="mailBaselineTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title" id="mailBaselineTitle">기준일별 메일 제목/내용 불러오기</h2>
+        <button class="modal-close" type="button" onclick="closeMailBaselineModal()" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>기준일</th>
+                <th>파일명</th>
+                <th>TASK (건)</th>
+                <th>선택</th>
+              </tr>
+            </thead>
+            <tbody id="mailBaselineBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" onclick="closeMailBaselineModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== 관리자 비밀번호 모달 ===== -->
-  <div id="authOverlay" class="modal-backdrop" onclick="if(event.target===this)closeAuthModal()" role="dialog" aria-modal="true" aria-labelledby="authTitle" aria-hidden="true">
+  <div id="authOverlay" class="modal-backdrop modal-top" onclick="if(event.target===this)closeAuthModal()" role="dialog" aria-modal="true" aria-labelledby="authTitle" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-header">
         <h2 class="modal-title" id="authTitle">관리자 접근 확인</h2>

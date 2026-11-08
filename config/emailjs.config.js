@@ -7,6 +7,6 @@ window.WBS_EMAILJS_CONFIG = {
   publicKey: 'TPuULBn-0jwemw9wO',
   serviceId: 'service_y55fdue',
   templateId: 'template_bhjqsx9',
-  fromName: 'PMS·SRM 일정관리',
+  fromName: '',
   replyTo: 'leehee4343@gmail.com'
 };

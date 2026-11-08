@@ -61,6 +61,67 @@
     let WBS_DATA = DEFAULT_WBS_DATA;
     let CURRENT_SOURCE_NAME = "";
 
+    /* 목록 공통: 10·30·50·100개씩 보기 + 페이징(가이드 5.3.4의 표시 형식) */
+    const LIST_PAGE_SIZES = [10, 30, 50, 100];
+    const _listStates = {};
+
+    function listState(key) {
+      return _listStates[key] || (_listStates[key] = { page: 1, size: LIST_PAGE_SIZES[0], rerender: null });
+    }
+
+    function resetListPage(key) { listState(key).page = 1; }
+
+    function listPageCount(key, total) { return Math.max(1, Math.ceil(total / listState(key).size)); }
+
+    function listSlice(key, rows) {
+      const st = listState(key);
+      st.page = Math.min(Math.max(1, st.page), listPageCount(key, rows.length));
+      return rows.slice((st.page - 1) * st.size, st.page * st.size);
+    }
+
+    function listOffset(key) { const st = listState(key); return (st.page - 1) * st.size; }
+
+    function changeListPage(key, page) { const st = listState(key); st.page = page; st.rerender(); }
+
+    function changeListSize(key, size) { const st = listState(key); st.size = Number(size); st.page = 1; st.rerender(); }
+
+    // anchor(표 래퍼 또는 목록 영역) 위에 건수 선택, 아래에 페이지 번호를 그린다
+    function renderListControls(key, anchor, total, rerender) {
+      const st = listState(key);
+      st.rerender = rerender;
+      const pages = listPageCount(key, total);
+      st.page = Math.min(Math.max(1, st.page), pages);
+
+      let top = document.getElementById('listTop-' + key);
+      let bottom = document.getElementById('listPager-' + key);
+      if (!top) {
+        top = document.createElement('div');
+        top.id = 'listTop-' + key;
+        top.className = 'list-controls';
+        anchor.before(top);
+        bottom = document.createElement('nav');
+        bottom.id = 'listPager-' + key;
+        bottom.className = 'pagination-controls';
+        bottom.setAttribute('aria-label', '목록 페이지 이동');
+        anchor.after(bottom);
+      }
+      top.innerHTML = `<span class="grid-page-summary">${total ? st.page : 0} / ${total ? pages : 0} (총 ${total}개)</span>`
+        + `<select class="form-control select-per-page" aria-label="목록 표시 개수" onchange="changeListSize('${key}', this.value)">`
+        + LIST_PAGE_SIZES.map(n => `<option value="${n}"${n === st.size ? ' selected' : ''}>${n}개씩</option>`).join('')
+        + '</select>';
+
+      const first = Math.floor((st.page - 1) / 10) * 10 + 1;
+      const last = Math.min(first + 9, pages);
+      const nav = (label, text, target, disabled) =>
+        `<button type="button" class="btn-page-nav" aria-label="${label}"${disabled ? ' disabled' : ''} onclick="changeListPage('${key}', ${target})">${text}</button>`;
+      let html = nav('첫 페이지', '&lt;&lt;', 1, st.page === 1) + nav('이전 페이지', '&lt;', st.page - 1, st.page === 1);
+      for (let n = first; n <= last; n++) {
+        html += `<button type="button" class="btn-page-num${n === st.page ? ' active' : ''}" aria-label="${n} 페이지"${n === st.page ? ' aria-current="page"' : ''} onclick="changeListPage('${key}', ${n})">${n}</button>`;
+      }
+      html += nav('다음 페이지', '&gt;', st.page + 1, st.page === pages) + nav('마지막 페이지', '&gt;&gt;', pages, st.page === pages);
+      bottom.innerHTML = html;
+    }
+
     /* === wbs_gen_analyses 기반 저장/조회 (프로젝트 범용) === */
 
     function supabaseAddOrUpdate(record, existingId = null) {
@@ -127,6 +188,11 @@
     function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
     function startOfDay(d) { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; }
 
+    // 공정률 막대 공통 형태: 막대 + 오른쪽 비율. tone: is-delay(빨강) / is-done(초록) / 없으면 파랑
+    function progressBarHtml(percent, tone = '', text = `${percent}%`) {
+      return `<div class="progress-bar"><div class="progress-track"><div class="progress-fill ${tone}" style="width:${percent}%"></div></div><span class="progress-pct">${text}</span></div>`;
+    }
+
     function getWeekRange(date) {
       const d = startOfDay(date);
       const day = d.getDay();
@@ -175,7 +241,7 @@
       const st = taskStatus(t);
       const start = parseDate(t.start), end = parseDate(t.end);
       const dateLabel = (start && end) ? `${fmtShort(start)} ~ ${fmtShort(end)}` : '-';
-      const barClass = st === 'delay' ? 'delaybar' : (st === 'done' ? 'donebar' : '');
+      const barTone = st === 'delay' ? 'is-delay' : (st === 'done' ? 'is-done' : '');
       const dd = delayDays(t);
       const ap = t.actualProgress;
       const progGap = (ap !== undefined && ap < t.progress) ? t.progress - ap : 0;
@@ -203,23 +269,17 @@
     <div class="dual-bar-wrap">
       <div class="dual-bar-row">
         <span class="dual-bar-label" title="엑셀 계획 진척율(G열)">계획 진척</span>
-        <div class="dual-bar-track"><div class="dual-bar-fill plan-fill" style="width:${t.progress}%"></div></div>
-        <span class="dual-bar-pct">${t.progress}%</span>
+        ${progressBarHtml(t.progress)}
       </div>
       <div class="dual-bar-sep"></div>
       <div class="dual-bar-row">
         <span class="dual-bar-label" title="엑셀 실적 진척율(실적 시트 G열)">실적 진척</span>
-        <div class="dual-bar-track"><div class="dual-bar-fill actual-fill" style="width:${actualValue}%"></div></div>
-        <span class="dual-bar-pct">${hasActual ? actualValue + '%' : '-'}</span>
+        ${progressBarHtml(actualValue, 'is-done', hasActual ? actualValue + '%' : '-')}
       </div>
       ${gapBadge}
     </div>`;
       } else {
-        progressHtml = `
-    <div class="task-bar-wrap">
-      <div class="task-bar-bg ${barClass}"><div class="task-bar-fill" style="width:${t.progress}%;"></div></div>
-      <div class="task-pct">${t.progress}%</div>
-    </div>`;
+        progressHtml = progressBarHtml(t.progress, barTone);
       }
 
       return `
@@ -245,6 +305,7 @@
     }
 
     // keepOrder: 넘겨받은 순서를 유지(지연 업무는 BR-09 심각도 순, DF-004). 그 외 목록은 묶음 안을 시작일 순으로 정렬
+    // 일정 화면의 업무 목록은 페이징 없이 전체를 한 번에 표시
     function renderTaskGroup(container, list, emptyMsg, emptyGood, showPlanActual = false, keepOrder = false) {
       if (list.length === 0) {
         container.innerHTML = `<div class="empty-msg ${emptyGood ? 'good' : ''}">${emptyMsg}</div>`;
@@ -346,6 +407,7 @@
 
       if (rows.length === 0) {
         document.getElementById('wbsTree').innerHTML = `<div class="empty-msg">조건에 맞는 TASK가 없습니다.</div>`;
+        markTreeDepth(null);
         return;
       }
 
@@ -382,8 +444,7 @@
       ${done  > 0 ? `<span class="tree-chip tc-done">완료 ${done}</span>` : ''}
       ${delay > 0 ? `<span class="tree-chip tc-delay">지연 ${delay}</span>` : ''}
       ${prog  > 0 ? `<span class="tree-chip tc-prog">진행 ${prog}</span>` : ''}
-      <div class="tree-prog-bar"><div class="tree-prog-fill" style="width:${avgProg}%"></div></div>
-      <span class="tree-prog-pct">${avgProg}%</span>
+      ${progressBarHtml(avgProg, delay > 0 ? 'is-delay' : (done === total ? 'is-done' : ''))}
     </div>
   </div>
   <div class="tree-phase-body">`;
@@ -404,8 +465,7 @@
           <span class="tree-chip tc-total">${tasks.length}건</span>
           ${aDelay > 0 ? `<span class="tree-chip tc-delay">지연 ${aDelay}</span>` : ''}
           ${aProg  > 0 ? `<span class="tree-chip tc-prog">진행 ${aProg}</span>` : ''}
-          <div class="tree-prog-bar"><div class="tree-prog-fill" style="width:${aAvg}%"></div></div>
-          <span class="tree-prog-pct">${aAvg}%</span>
+          ${progressBarHtml(aAvg, aDelay > 0 ? 'is-delay' : (aDone === tasks.length ? 'is-done' : ''))}
         </div>
       </div>
       <div class="tree-act-body">`;
@@ -424,9 +484,7 @@
             const ap = t.actualProgress;
             const showDual = ap !== undefined && ap !== t.progress;
             const titleAttr = ` title="${esc(t.task + (t.deliverable ? ' | 산출물: ' + t.deliverable : ''))}"`;
-            const pctHtml = showDual
-              ? `<span class="tree-task-pct" title="계획 ${t.progress}% · 실적 ${ap}%">${t.progress}% · <span class="actual">${ap}%</span></span>`
-              : `<span class="tree-task-pct">${t.progress}%</span>`;
+            const pctText = showDual ? `${t.progress}% · <span class="actual" title="실적">${ap}%</span>` : `${t.progress}%`;
 
             html += `
         <div class="tree-task-row ${rowCls}">
@@ -434,8 +492,7 @@
           <div class="tree-task-name"${titleAttr}><span class="tree-task-text">${esc(t.task)}</span>${delayText}</div>
           <div class="tree-task-dates">${dateStr}</div>
           <div class="tree-task-bar">
-            <div class="mini-bar-bg"><div class="mini-bar-fill ${barCls}" style="width:${t.progress}%"></div></div>
-            ${pctHtml}
+            ${progressBarHtml(t.progress, barCls, pctText)}
           </div>
         </div>`;
           });
@@ -447,21 +504,34 @@
       });
 
       document.getElementById('wbsTree').innerHTML = html;
+      markTreeDepth(hasFilter ? 'task' : 'activity');   // 처음 그릴 때의 펼침 상태와 맞춤
     }
 
     // 트리 단계·활동 머리글은 키보드(Enter·Space)로도 펼치고 접으며 펼침 상태를 aria-expanded로 알림(DF-017)
     function toggleTreeNode(header, nodeSelector) {
       const open = header.closest(nodeSelector).classList.toggle('open');
       header.setAttribute('aria-expanded', String(open));
+      markTreeDepth(null);   // 한 줄씩 직접 펼치면 어느 보기에도 해당하지 않음
     }
 
-    function setTreeAll(open) {
-      const tree = document.getElementById('wbsTree');
-      tree.querySelectorAll('.tree-phase, .tree-activity').forEach(el => {
-        open ? el.classList.add('open') : el.classList.remove('open');
+    // 펼침 수준 버튼 표시 — depth: phase(단계만) / activity(활동까지) / task(TASK까지) / null(직접 조정)
+    function markTreeDepth(depth) {
+      document.querySelectorAll('.tree-ctrl-bar [data-depth]').forEach(btn => {
+        const active = btn.dataset.depth === depth;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function setTreeDepth(depth) {
+      const setOpen = (selector, open) => document.querySelectorAll('#wbsTree ' + selector).forEach(el => {
+        el.classList.toggle('open', open);
         const header = el.querySelector(':scope > .tree-phase-hd, :scope > .tree-act-hd');
         if (header) header.setAttribute('aria-expanded', String(open));
       });
+      setOpen('.tree-phase', depth !== 'phase');
+      setOpen('.tree-activity', depth === 'task');
+      markTreeDepth(depth);
     }
 
     function renderAllTable() { renderWbsTree(); }
@@ -491,36 +561,6 @@
         return s + (t.weight || 0) * prog;
       }, 0);
       return acc / totalW * 100;
-    }
-
-    function renderPhaseSummary() {
-      const grouped = groupByPhase(WBS_DATA);
-      let html = '';
-      grouped.forEach((tasks, phase) => {
-        const total = tasks.length;
-        const doneCnt = tasks.filter(t => taskStatus(t) === 'done').length;
-        const delayCnt = tasks.filter(t => taskStatus(t) === 'delay').length;
-        const progCnt = tasks.filter(t => taskStatus(t) === 'progress').length;
-        const avgProgress = weightedProgress(tasks);
-        html += `
-    <div class="phase-group">
-      <h3 class="phase-title">${esc(phase)}<span class="phase-count">${total}건</span></h3>
-      <div class="task-row phase-summary-row ${delayCnt > 0 ? 'is-delay' : ''}">
-        <div class="task-info">
-          <div class="t-meta">
-            <span class="badge-success">완료 ${doneCnt}</span>
-            <span class="badge-warning">진행중 ${progCnt}</span>
-            <span class="${delayCnt > 0 ? 'badge-danger' : 'badge-tag'}">지연 ${delayCnt}</span>
-          </div>
-        </div>
-        <div class="task-bar-wrap">
-          <div class="task-bar-bg ${delayCnt > 0 ? 'delaybar' : ''}"><div class="task-bar-fill" style="width:${avgProgress}%;"></div></div>
-          <div class="task-pct">가중 평균 공정율 ${avgProgress}%</div>
-        </div>
-      </div>
-    </div>`;
-      });
-      document.getElementById('phaseSummary').innerHTML = html;
     }
 
     function renderAll() {
@@ -594,7 +634,6 @@
       document.getElementById('gaugeFill').setAttribute('stroke-dashoffset', offset);   // 인라인 style 대신 SVG 속성(UI-03)
 
       renderAllTable();
-      renderPhaseSummary();
     }
 
     /* ===================== 필터 초기화 ===================== */
@@ -667,7 +706,9 @@
 
     /* ===== 관리자 인증 ===== */
     const PROTECTED_PAGES = new Set(['p-upload', 'p-history', 'p-members', 'p-mail']);   // 관리자 전용 서비스 메뉴 전체(DF-024)
-    let _authed = false;
+    // 새로고침해도 현재 화면을 유지하도록 로그인 상태를 이 탭에만 보관(탭을 닫으면 해제)
+    const AUTH_SESSION_KEY = 'wbs_admin_authed';
+    let _authed = (() => { try { return sessionStorage.getItem(AUTH_SESSION_KEY) === '1'; } catch (e) { return false; } })();
     let _pendingPage = '';
 
     function _openAuthModal(desc) {
@@ -684,7 +725,7 @@
       if (!PROTECTED_PAGES.has(pageId) || _authed) { navigateTo(pageId); return; }
       _pendingPage = pageId;
       _authCallback = null;
-      const menuName = { 'p-upload': 'WBS 업데이트', 'p-history': '분석 결과 조회', 'p-members': '구성원 관리', 'p-mail': '메일 보내기' }[pageId];
+      const menuName = { 'p-upload': 'WBS 업데이트', 'p-history': '분석 결과 조회', 'p-members': '구성원 관리', 'p-mail': '일정 관련 메일보내기' }[pageId];
       _openAuthModal(`${menuName} 메뉴는 관리자 확인 후 이용할 수 있습니다.`);   // DF-005
     }
 
@@ -709,9 +750,13 @@
       try { matched = (await sha256Hex(val)) === ADMIN_PW_SHA256; } catch (e) { console.error('비밀번호 확인 실패(보안 연결 필요):', e); }
       if (matched) {
         _authed = true;
+        try { sessionStorage.setItem(AUTH_SESSION_KEY, '1'); } catch (e) {}
+        const targetPage = _pendingPage;
+        const callback = _authCallback;
+        _pendingPage = '';
         closeAuthModal();
-        if (_authCallback) { const fn = _authCallback; _authCallback = null; fn(); }
-        else if (_pendingPage) navigateTo(_pendingPage);
+        if (callback) callback();
+        else if (targetPage) navigateTo(targetPage);
       } else {
         const error = document.getElementById('authError');
         error.textContent = '비밀번호가 올바르지 않습니다. 다시 입력해 주세요.';
@@ -724,6 +769,13 @@
 
     function closeAuthModal() {
       setModalOpen(document.getElementById('authOverlay'), false);
+      _authCallback = null;   // 취소한 작업이 다음 로그인 때 실행되지 않게
+      // 비밀번호를 취소하면 주소를 실제로 보이는 화면에 맞춤
+      if (_pendingPage) {
+        _pendingPage = '';
+        const shown = document.querySelector('.page.on')?.id;
+        if (PAGE_ROUTES[shown]) location.replace('#' + PAGE_ROUTES[shown]);
+      }
     }
 
     function toggleAuthPassword() {
@@ -737,11 +789,52 @@
     }
 
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && document.getElementById('authOverlay').classList.contains('open')) closeAuthModal();
+      if (event.key === 'Escape' && document.getElementById('authOverlay').classList.contains('open')) {
+        closeAuthModal();
+        event.stopImmediatePropagation();   // 뒤에 열린 프로젝트 관리 창까지 닫히지 않게
+      }
     });
 
     // 데이터가 없을 때의 자동 이동: 관리자 인증 상태에서만 WBS 업데이트, 아니면 대시보드(DF-003)
-    function goToStart() { navigateTo(_authed ? 'p-upload' : 'p-dash'); }
+    function goToStart() {
+      if (openStartRoute()) return;
+      navigateTo(_authed ? 'p-upload' : 'p-dash');
+    }
+
+    /* 화면별 주소(#...) — 새로고침·뒤로가기·주소 직접 입력 때 해당 화면을 연다 */
+    const PAGE_ROUTES = {
+      'p-dash': 'dashboard', 'p-this': 'this-week', 'p-next': 'next-week', 'p-delay': 'delay',
+      'p-all': 'schedule', 'p-upload': 'upload', 'p-history': 'history',
+      'p-members': 'members', 'p-mail': 'mail'
+    };
+    let _startRoutePending = true;
+
+    function pageFromHash() {
+      const route = location.hash.slice(1);
+      return Object.keys(PAGE_ROUTES).find(pageId => PAGE_ROUTES[pageId] === route) || null;
+    }
+
+    // 프로젝트·분석 결과를 다 불러온 뒤 첫 화면을 주소대로 연다. 주소에 화면이 있으면 true
+    function openStartRoute() {
+      if (!_startRoutePending) return false;
+      _startRoutePending = false;
+      const pageId = pageFromHash();
+      if (!pageId) return false;
+      requireAuth(pageId);
+      return true;
+    }
+
+    function setRouteHash(pageId) {
+      const hash = '#' + PAGE_ROUTES[pageId];
+      if (!PAGE_ROUTES[pageId] || location.hash === hash) return;
+      if (location.hash) location.hash = hash;
+      else location.replace(hash);   // 첫 진입은 뒤로가기 기록을 늘리지 않음
+    }
+
+    window.addEventListener('hashchange', () => {
+      const pageId = pageFromHash();
+      if (!_startRoutePending && pageId && pageId !== document.querySelector('.page.on')?.id) requireAuth(pageId);
+    });
 
     /* 타이틀 옆 인쇄·PDF 저장 원형 버튼 — 화면마다 HTML로 만들지 않고 한 곳에서 주입(가이드 4.3, ? 매뉴얼은 사용자 결정으로 제외, UI-08) */
     function initPageTools() {
@@ -775,8 +868,9 @@
       const page = document.getElementById(pageId);
       if (page) page.classList.add('on');
       window.scrollTo(0, 0);
+      setRouteHash(pageId);
       if (pageId === 'p-history') renderHistoryPage();
-      if (pageId === 'p-members') renderMembersPage();
+      if (pageId === 'p-members') { resetMemberFilter(); renderMembersPage(); }
       if (pageId === 'p-mail') renderMailPage();
     }
 
@@ -818,7 +912,7 @@
       restoreAnalysis(Number(idStr));
     }
 
-    /* ===================== 메일 보내기 ===================== */
+    /* ===================== 일정 관련 메일보내기 ===================== */
     const _mailTo = new Set();
     const _mailCc = new Set();
     let mailEditor = null;
@@ -858,22 +952,49 @@
       if (editor) editor.focus();
     }
 
-    function populateMailBaselineSelect() {
-      const select = document.getElementById('mailBaselineSelect');
-      if (!select) return;
-      const selected = select.value || 'current';
-      // Supabase 포함 전체 이력에서 기준일 목록 구성
+    /* 기준일별 메일 제목/내용 불러오기 팝업 — 최신 기준일 순, 목록 공통 페이징 */
+    let _mailBaselineEntries = [];
+
+    function openMailBaselineModal() {
       getCombinedHistoryList().then(all => {
         // 업로드된 파일 1개당 1개의 기준일만 표시 (fileName 기준 최신 저장본)
         const byFile = new Map();
         [...all]
           .sort((a, b) => (a.savedAt || '').localeCompare(b.savedAt || ''))
           .forEach(r => byFile.set(r.fileName, r));
-        const records = [...byFile.values()].sort((a, b) => b.wbsDate.localeCompare(a.wbsDate));
-        select.innerHTML = '<option value="current">기준일 선택 — 현재 분석 (' + fmtDot(TODAY) + ')</option>' +
-          records.map(r => `<option value="${r.id}">${fmtDot(r.wbsDate)} · ${esc(r.fileName)}</option>`).join('');
-        select.value = [...select.options].some(o => o.value === selected) ? selected : 'current';
-      });
+        const records = [...byFile.values()]
+          .sort((a, b) => b.wbsDate.localeCompare(a.wbsDate) || (b.savedAt || '').localeCompare(a.savedAt || ''));
+        // 최종 저장 전인 현재 분석도 메일에 쓸 수 있게 맨 위에 표시
+        if (CURRENT_SOURCE_NAME && WBS_DATA.length && !byFile.has(CURRENT_SOURCE_NAME)) {
+          records.unshift({ id: 'current', wbsDate: fmt(TODAY), fileName: CURRENT_SOURCE_NAME, summary: { total: WBS_DATA.length }, unsaved: true });
+        }
+        _mailBaselineEntries = records;
+        resetListPage('mailBaseline');
+        renderMailBaselineList();
+        setModalOpen(document.getElementById('mailBaselineOverlay'), true);
+      }).catch(err => showToast('기준일 목록 조회 오류: ' + err.message, 'err'));
+    }
+
+    function closeMailBaselineModal() {
+      setModalOpen(document.getElementById('mailBaselineOverlay'), false);
+    }
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && document.getElementById('mailBaselineOverlay').classList.contains('open')) closeMailBaselineModal();
+    });
+
+    function renderMailBaselineList() {
+      const tbody = document.getElementById('mailBaselineBody');
+      renderListControls('mailBaseline', tbody.closest('.table-wrap'), _mailBaselineEntries.length, renderMailBaselineList);
+      const rows = listSlice('mailBaseline', _mailBaselineEntries);
+      tbody.innerHTML = rows.length
+        ? rows.map(r => `<tr>
+            <td class="cell-nowrap">${fmtDot(r.wbsDate)}${r.unsaved ? ' <span class="badge-warning">저장 전</span>' : ''}</td>
+            <td>${esc(r.fileName)}</td>
+            <td>${r.summary?.total ?? '-'}</td>
+            <td><button type="button" class="btn btn-secondary btn-row" onclick="fillMailBodyFromBaseline('${r.id}')">선택</button></td>
+          </tr>`).join('')
+        : '<tr><td colspan="4" class="table-empty">저장된 분석 결과가 없습니다.</td></tr>';
     }
 
     // GenDB 우선, 없으면 Supabase에서 tasks 포함 전체 레코드 fetch
@@ -895,6 +1016,7 @@
 
     // 메일 제목·인사말에 쓰는 담당자 정보 — 한 곳에서 바꾸도록 모음(IR-09)
     const MAIL_OWNER = { name: '이희성', title: '이사', email: 'leehee4343@gmail.com' };
+    const MAIL_DEFAULT_SUBJECT = `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다. (차주 주간보고서 작성요청의 건)`;
     const MAIL_HEADER_NOTICE =
       `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다.\n` +
       '금주 한 일과 차주 할일, 그리고 지연 업무에 대해서 안내드립니다.\n\n' +
@@ -918,6 +1040,8 @@
           { insert: bodyText }
         ]
       });
+      document.getElementById('mailSubject').value = MAIL_DEFAULT_SUBJECT;
+      closeMailBaselineModal();
       showToast(toastMsg, 'ok');
     }
 
@@ -941,11 +1065,10 @@
 
     function renderMailPage() {
       ensureMailEditor();
-      populateMailBaselineSelect();
       renderEjsStatus();
       const subjectEl = document.getElementById('mailSubject');
       if (subjectEl && !subjectEl.value) {
-        subjectEl.value = `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다. (차주 주간보고서 작성요청의 건)`;
+        subjectEl.value = MAIL_DEFAULT_SUBJECT;
       }
       mdbGetAll().then(members => {
         _mailTo.clear();
@@ -1000,7 +1123,7 @@
         publicKey: source.publicKey || '',
         serviceId: source.serviceId || '',
         templateId: source.templateId || '',
-        fromName: source.fromName || '프로젝트 일정관리',
+        fromName: source.fromName || '',
         replyTo: source.replyTo || '',
         source: isDeployed ? 'deployment' : 'browser'
       };
@@ -1075,13 +1198,14 @@
       document.getElementById('ejsReplyTo').value    = cfg.replyTo;
       const fromName = document.getElementById('mailFromName');
       const fromAddr = document.getElementById('mailFromAddr');
-      if (fromName) fromName.textContent = cfg.fromName;
+      if (fromName) { fromName.textContent = cfg.fromName; fromName.hidden = !cfg.fromName; }
       if (fromAddr) fromAddr.textContent = cfg.replyTo || '회신 이메일 미설정';
     }
-    function toggleEjsPanel() {
-      const open = document.getElementById('ejsPanel').classList.toggle('open');
+    function toggleSettingsPanel(panelId) {
+      const panel = document.getElementById(panelId);
+      const open = panel.classList.toggle('open');
       // 화면낭독기에 펼침/접힘 상태 전달(IR-13)
-      document.querySelector('#ejsPanel .ejs-panel-hd').setAttribute('aria-expanded', String(open));
+      panel.querySelector('.ejs-panel-hd').setAttribute('aria-expanded', String(open));
     }
 
     /* --- 메일 발송 --- */
@@ -1128,7 +1252,7 @@
           message:   body,
           message_html: bodyHtml,
           sent_at: new Date().toLocaleString('ko-KR'),
-          page_url: window.location.href
+          page_url: window.location.href.split('#')[0]   // 메일 수신자에게 관리자 화면 주소가 가지 않게
         });
       }).then(() => {
         showToast('메일이 성공적으로 발송되었습니다.', 'ok');
@@ -1305,8 +1429,8 @@
       return fmtDot(startOfDay(d)) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
     }
 
-    function uploadHistoryRow(time, fileName, count, badge) {
-      return `<tr><td>${time}</td><td class="cell-text">${esc(fileName)}</td><td>${count}</td><td>${badge}</td></tr>`;
+    function uploadHistoryRow(time, fileName, count, badge, action = '-') {
+      return `<tr><td>${time}</td><td>${esc(fileName)}</td><td>${count}</td><td>${badge}</td><td>${action}</td></tr>`;
     }
 
     function renderUploadHistory() {
@@ -1322,9 +1446,14 @@
             e.ok ? '<span class="badge-warning">저장 전</span>' : '<span class="badge-danger">실패</span>'));
         const savedRows = [...all]
           .sort((a, b) => (b.wbsDate || '').localeCompare(a.wbsDate || '') || (b.savedAt || '').localeCompare(a.savedAt || ''))
-          .map(r => uploadHistoryRow(fmtDateTime(r.savedAt), r.fileName, r.summary?.total ?? '-', '<span class="badge-success">저장 완료</span>'));
+          .map(r => uploadHistoryRow(fmtDateTime(r.savedAt), r.fileName, r.summary?.total ?? '-', '<span class="badge-success">저장 완료</span>',
+            `<button type="button" class="btn btn-delete btn-row" onclick="deleteAnalysis(${r.id})">삭제</button>`));
         const rows = sessionRows.concat(savedRows);
-        tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="4" class="table-empty">업로드한 이력이 없습니다.</td></tr>';
+        const draw = () => {
+          renderListControls('uploads', tbody.closest('.table-wrap'), rows.length, draw);
+          tbody.innerHTML = rows.length ? listSlice('uploads', rows).join('') : '<tr><td colspan="5" class="table-empty">업로드한 이력이 없습니다.</td></tr>';
+        };
+        draw();
       });
     }
 
@@ -1459,6 +1588,30 @@
         });
     }
 
+    // 전체 프로젝트의 구성원 — 구성원 관리 검색과 기존 구성원 불러오기에 사용
+    function mdbGetEveryMember() {
+      const client = getSupabaseClient();
+      if (!client) return genMembersDbGetAll();
+      return client.from('wbs_gen_members').select('*').order('name', { ascending: true })
+        .then(({ data, error }) => {
+          if (error) { console.error('Supabase gen_members select error:', error); return genMembersDbGetAll(); }
+          return (data || []).map(row => ({
+            id: row.id, name: row.name, role: row.role, email: row.email,
+            phone: row.phone, title: row.title, createdAt: row.created_at, project_id: row.project_id
+          }));
+        });
+    }
+
+    function mdbGetProjects() {
+      const client = getSupabaseClient();
+      if (!client) return Promise.resolve([]);
+      return client.from('wbs_gen_projects').select('id, name').order('name')
+        .then(({ data, error }) => {
+          if (error) { console.error('Supabase gen_projects select error:', error); return []; }
+          return data || [];
+        });
+    }
+
     function mdbAdd(record) {
       if (!_currentProject) return Promise.reject(new Error('프로젝트를 먼저 선택하세요.'));
       const client = getSupabaseClient();
@@ -1481,7 +1634,9 @@
         phone: record.phone, title: record.title, created_at: record.createdAt
       };
       if (!client) {
-        return genMemberDbPut(id, Object.assign({}, record, { project_id: _currentProject?.id }));
+        // 다른 프로젝트 구성원을 검색해 수정해도 소속 프로젝트는 그대로 유지
+        const owner = _memberRows.find(m => m.id === id);
+        return genMemberDbPut(id, Object.assign({}, record, { project_id: owner ? owner.project_id : _currentProject?.id }));
       }
       return client.from('wbs_gen_members').update(dbRecord).eq('id', id).select('id')
         .then(({ data, error }) => { if (error) throw error; return id; });
@@ -1756,10 +1911,24 @@
 
     function resetHistSearch() {
       document.getElementById('histSearchName').value = '';
+      resetListPage('history');
       renderHistoryPage();
     }
 
     /* ===================== 프로젝트 구성원 관리 ===================== */
+    /* 연락처 공통 규격: 휴대폰 번호를 숫자만 입력해도 010-1234-5678 형식으로 저장·표시 */
+    function isValidMobile(value) {
+      return /^(010\d{8}|01[16789]\d{7,8})$/.test(String(value ?? '').replace(/[\s-]/g, ''));
+    }
+
+    function formatMobile(value) {
+      const raw = String(value ?? '').trim();
+      const digits = raw.replace(/\D/g, '');
+      if (digits.length === 11 && digits.startsWith('01')) return digits.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+      if (digits.length === 10 && digits.startsWith('01')) return digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+      return raw;
+    }
+
     function toggleMemberForm(editData) {
       const panel = document.getElementById('memberFormPanel');
       if (editData) {
@@ -1769,15 +1938,18 @@
         document.getElementById('mfName').value = editData.name || '';
         document.getElementById('mfRole').value = editData.role || '';
         document.getElementById('mfEmail').value = editData.email || '';
-        document.getElementById('mfPhone').value = editData.phone || '';
+        document.getElementById('mfPhone').value = formatMobile(editData.phone);
         document.getElementById('mfTitle').value = editData.title || '';
+        setMemberImportVisible(false);
         panel.classList.add('open');
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         if (panel.classList.contains('open')) {
           closeMemberForm();
         } else {
-          document.getElementById('memberFormTitle').textContent = '구성원 추가';
+          // 검색으로 다른 프로젝트를 보는 중이어도 추가는 상단 선택 프로젝트에 되므로 제목에 밝힘
+          const viewingOther = _memberFilterProject !== null && _memberFilterProject !== _currentProject?.id;
+          document.getElementById('memberFormTitle').textContent = viewingOther && _currentProject ? `구성원 추가 (${_currentProject.name})` : '구성원 추가';
           document.getElementById('mfEditId').value = '';
           document.getElementById('mfCreatedAt').value = '';
           document.getElementById('mfName').value = '';
@@ -1785,10 +1957,47 @@
           document.getElementById('mfEmail').value = '';
           document.getElementById('mfPhone').value = '';
           document.getElementById('mfTitle').value = '';
+          setMemberImportVisible(true);
+          renderMemberImportOptions();
           panel.classList.add('open');
           document.getElementById('mfName').focus();
         }
       }
+    }
+
+    /* 기존 구성원 불러오기 — 다른 프로젝트의 정보를 입력칸에 채우고, 저장하면 현재 프로젝트에 별도로 등록 */
+    let _memberImportCandidates = [];
+
+    function setMemberImportVisible(visible) {
+      document.getElementById('mfImportGroup').hidden = !visible;
+    }
+
+    function renderMemberImportOptions() {
+      const select = document.getElementById('mfImport');
+      const projectId = _currentProject?.id ?? null;
+      Promise.all([mdbGetEveryMember(), mdbGetAll()]).then(([everyone, current]) => {
+        const emailKey = m => (m.email || '').trim().toLowerCase();
+        const taken = new Set(current.map(emailKey));
+        const byEmail = new Map();   // 같은 사람(이메일)이 여러 프로젝트에 있어도 한 번만 표시
+        everyone.filter(m => m.project_id !== projectId && !taken.has(emailKey(m)))
+          .forEach(m => byEmail.set(emailKey(m), m));
+        _memberImportCandidates = [...byEmail.values()].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+        const hasCandidates = _memberImportCandidates.length > 0;
+        select.innerHTML = `<option value="">${hasCandidates ? '다른 프로젝트의 구성원 선택' : '불러올 다른 프로젝트 구성원이 없습니다'}</option>`
+          + _memberImportCandidates.map((m, i) => `<option value="${i}">${esc(m.name)}${m.title ? ' ' + esc(m.title) : ''} · ${esc(m.email)}</option>`).join('');
+        select.disabled = !hasCandidates;
+      }).catch(err => console.error('구성원 불러오기 목록 조회 실패:', err));
+    }
+
+    function applyMemberImport(index) {
+      const m = _memberImportCandidates[Number(index)];
+      if (index === '' || !m) return;
+      document.getElementById('mfName').value = m.name || '';
+      document.getElementById('mfTitle').value = m.title || '';
+      document.getElementById('mfRole').value = m.role || '';
+      document.getElementById('mfPhone').value = formatMobile(m.phone);
+      document.getElementById('mfEmail').value = m.email || '';
+      document.getElementById('mfRole').focus();   // 프로젝트마다 역할이 다를 수 있어 역할 칸으로 이동
     }
 
     function closeMemberForm() {
@@ -1818,8 +2027,8 @@
         document.getElementById('mfEmail').focus();
         return;
       }
-      if (!/^[0-9+\- ]{7,20}$/.test(document.getElementById('mfPhone').value.trim())) {
-        showToast('연락처는 숫자와 - 로 입력하세요. (예: 010-1234-5678)', 'err');
+      if (!isValidMobile(document.getElementById('mfPhone').value)) {
+        showToast('연락처는 휴대폰 번호로 입력하세요. (예: 01012345678)', 'err');
         document.getElementById('mfPhone').focus();
         return;
       }
@@ -1832,7 +2041,7 @@
         name,
         role:  document.getElementById('mfRole').value.trim(),
         email,
-        phone: document.getElementById('mfPhone').value.trim(),
+        phone: formatMobile(document.getElementById('mfPhone').value),
         title: document.getElementById('mfTitle').value.trim(),
         createdAt
       };
@@ -1846,58 +2055,106 @@
     }
 
     function editMember(id) {
-      mdbGetAll().then(all => {
-        const m = all.find(r => r.id === id);
-        if (m) toggleMemberForm(m);
-      });
+      const m = _memberRows.find(r => r.id === id);
+      if (m) toggleMemberForm(m);
     }
 
-    function deleteMember(id) {
-      mdbGetAll().then(async all => {
-        const m = all.find(r => r.id === id);
-        if (!m) return;
-        if (!(await confirmDialog(`"${m.name}" (${m.email}) 구성원을 삭제하시겠습니까?`, { title: '구성원 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
-        mdbDelete(id).then(() => {
-          showToast('삭제되었습니다.', '');
-          renderMembersPage();
-        }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
-      });
+    async function deleteMember(id) {
+      const m = _memberRows.find(r => r.id === id);
+      if (!m) return;
+      const owner = m.project_id !== _currentProject?.id ? `[${memberProjectName(m.project_id)}] ` : '';
+      if (!(await confirmDialog(`${owner}"${m.name}" (${m.email}) 구성원을 삭제하시겠습니까?`, { title: '구성원 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
+      mdbDelete(id).then(() => {
+        showToast('삭제되었습니다.', '');
+        renderMembersPage();
+      }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
+    }
+
+    /* 구성원 검색 — 프로젝트 기본값은 상단 선택 프로젝트(null), 'all'은 전체 프로젝트 */
+    let _memberRows = [];
+    let _memberProjects = [];
+    let _memberFilterProject = null;
+    let memberRenderVersion = 0;
+
+    function memberProjectName(projectId) {
+      return _memberProjects.find(p => p.id === projectId)?.name || '-';
+    }
+
+    function resetMemberFilter() {
+      _memberFilterProject = null;
+      resetListPage('members');
+      document.getElementById('memberFilterKeyword').value = '';
+    }
+
+    function onMemberFilterProjectChange(value) {
+      _memberFilterProject = value === 'all' ? 'all' : Number(value);
+      resetListPage('members');
+      renderMemberTable();
     }
 
     function renderMembersPage() {
+      if (!document.getElementById('memberTableBody')) return;
+      const version = ++memberRenderVersion;
+      Promise.all([mdbGetEveryMember(), mdbGetProjects()]).then(([everyone, projects]) => {
+        if (version !== memberRenderVersion) return;
+        _memberRows = everyone;
+        _memberProjects = projects;
+        if (_currentProject && !projects.some(p => p.id === _currentProject.id)) _memberProjects = [_currentProject, ...projects];
+        if (typeof _memberFilterProject === 'number' && !_memberProjects.some(p => p.id === _memberFilterProject)) _memberFilterProject = null;
+
+        // 왼쪽 메뉴 숫자는 검색과 무관하게 상단 선택 프로젝트의 인원
+        const navBadge = document.getElementById('navCountMembers');
+        const currentCount = everyone.filter(m => m.project_id === (_currentProject?.id ?? null)).length;
+        if (navBadge) { navBadge.textContent = currentCount; navBadge.hidden = !(currentCount > 0); }
+        renderMemberTable();
+      }).catch(err => console.error('구성원 목록 조회 실패:', err));
+    }
+
+    function renderMemberTable() {
       const tbody = document.getElementById('memberTableBody');
-      const countLabel = document.getElementById('memberCountLabel');
-      const navBadge = document.getElementById('navCountMembers');
-      if (!tbody) return;
+      const select = document.getElementById('memberFilterProject');
+      const currentId = _currentProject?.id ?? null;
+      const filter = _memberFilterProject ?? currentId;
+      const isAll = filter === 'all';
+      select.innerHTML = `<option value="all">전체 프로젝트</option>`
+        + _memberProjects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      select.value = isAll ? 'all' : String(filter ?? 'all');
 
-      mdbGetAll().then(all => {
-        const count = all.length;
-        if (countLabel) countLabel.textContent = count;
-        if (navBadge) { navBadge.textContent = count; navBadge.hidden = !(count > 0); }
+      const keyword = document.getElementById('memberFilterKeyword').value.trim().toLowerCase();
+      const digits = /^[0-9\- ]+$/.test(keyword) ? keyword.replace(/\D/g, '') : '';
+      const matches = m => {
+        const text = [memberProjectName(m.project_id), m.name, m.role, m.title, m.email, m.phone].map(v => (v || '').toLowerCase());
+        return text.some(v => v.includes(keyword)) || (digits && (m.phone || '').replace(/\D/g, '').includes(digits));
+      };
+      const rows = _memberRows.filter(m => (isAll || m.project_id === filter) && (!keyword || matches(m)));
 
-        if (count === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="table-empty">등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.</td></tr>`;
-          return;
-        }
+      document.getElementById('memberCountLabel').textContent = rows.length;
+      renderListControls('members', tbody.closest('.table-wrap'), rows.length, renderMemberTable);
 
-        const dash = '<span class="text-muted">-</span>';
-        // 이름·직책·연락처는 짧은 값이라 줄바꿈하지 않음(DF-012)
-        tbody.innerHTML = all.map((m, i) => {
-          const role = m.role ? `<span class="member-role-badge">${esc(m.role)}</span>` : dash;
-          return `<tr>
-            <td>${i + 1}</td>
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="table-empty">${keyword ? '검색 결과가 없습니다. 검색어를 확인해 주세요.' : '등록된 구성원이 없습니다. 구성원 추가 버튼을 눌러 등록해 주세요.'}</td></tr>`;
+        return;
+      }
+
+      const dash = '<span class="text-muted">-</span>';
+      // 이름·직책·연락처는 짧은 값이라 줄바꿈하지 않음(DF-012)
+      const offset = listOffset('members');
+      tbody.innerHTML = listSlice('members', rows).map((m, i) => {
+        const role = m.role ? `<span class="member-role-badge">${esc(m.role)}</span>` : dash;
+        return `<tr>
+            <td>${offset + i + 1}</td>
+            <td>${esc(memberProjectName(m.project_id))}</td>
             <td class="cell-nowrap">${esc(m.name)}</td>
             <td>${role}</td>
             <td class="cell-nowrap">${m.title ? esc(m.title) : dash}</td>
-            <td class="cell-text">${esc(m.email)}</td>
-            <td class="cell-nowrap">${m.phone ? esc(m.phone) : dash}</td>
+            <td>${esc(m.email)}</td>
+            <td class="cell-nowrap">${m.phone ? esc(formatMobile(m.phone)) : dash}</td>
             <td><div class="member-actions">
               <button type="button" class="btn btn-secondary btn-row" onclick="editMember(${m.id})">수정</button>
               <button type="button" class="btn btn-delete btn-row" onclick="deleteMember(${m.id})">삭제</button>
             </div></td>
           </tr>`;
-        }).join('');
-      });
+      }).join('');
     }
 
     function fmtSavedAt(iso) {
@@ -1934,6 +2191,7 @@
           // 최신 기준일이 맨 위(사용자 요청 2026-10-23, UI-10). 같은 기준일이면 최근 저장이 위
           .sort((a, b) => b.wbsDate.localeCompare(a.wbsDate) || (b.savedAt || '').localeCompare(a.savedAt || ''));
 
+        renderListControls('history', container, list.length, renderHistoryPage);
         if (list.length === 0) {
           container.innerHTML = all.length === 0
             ? `<div class="hist-empty">저장된 분석 결과가 없습니다.<br>WBS 업데이트 후 최종 저장을 눌러 기록을 남겨 주세요.</div>`
@@ -1943,7 +2201,7 @@
 
         const currentWbsDate = fmt(TODAY);
         let html = '<div class="hist-grid">';
-        list.forEach(r => {
+        listSlice('history', list).forEach(r => {
           const isActive = r.wbsDate === currentWbsDate && r.fileName === CURRENT_SOURCE_NAME;
           const s = r.summary;
           const gap = s.actualRate - s.planRate;
@@ -1970,9 +2228,7 @@
   <div class="hist-footer">
     <div class="hist-actions">
       <button type="button" class="btn btn-primary" onclick="restoreAnalysis(${r.id})">불러오기</button>
-      <button type="button" class="btn btn-secondary" onclick="copyAnalysisLink(${r.id})">링크 복사</button>
       <button type="button" class="btn btn-secondary" onclick="downloadAnalysisFile(${r.id})">파일 다운로드</button>
-      <button type="button" class="btn btn-delete" onclick="deleteAnalysis(${r.id})">삭제</button>
     </div>
   </div>
 </div>`;
@@ -2146,24 +2402,6 @@
         .catch(() => { copyFallbackDialog(text, '보고 텍스트 복사'); });
     }
 
-    function copyAnalysisLink(id) {
-      // 브라우저에만 저장된 결과는 다른 브라우저에서 열 수 없고 번호가 클라우드 ID와 겹칠 수 있어 링크를 만들지 않음(IR-14)
-      genDbGet(id).catch(() => null).then(r => {
-        if (r && r.localOnly) { showToast('브라우저에만 저장된 결과는 공유 링크를 만들 수 없습니다. 클라우드에 저장한 뒤 복사하세요.', 'err'); return; }
-        copyAnalysisLinkUrl(id);
-      });
-    }
-    function copyAnalysisLinkUrl(id) {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('id', id);
-        navigator.clipboard.writeText(url.toString())
-          .then(() => showToast('링크가 클립보드에 복사되었습니다.', 'ok'))
-          .catch(() => {
-            copyFallbackDialog(url.toString(), '공유 링크 복사');
-          });
-      } catch(e) { showToast('URL 생성 오류', 'err'); }
-    }
 
     function restoreAnalysis(id) {
       genDbGet(id).then(r => {
@@ -2237,7 +2475,7 @@
       showToast(`"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})을 불러왔습니다.`, 'ok');
       warnIfSummaryChanged(r.summary);
       updateUrlParam(r.localOnly ? null : id);   // 브라우저에만 저장된 결과는 공유 링크를 만들지 않음(IR-14)
-      navigateTo('p-dash');
+      if (!openStartRoute()) navigateTo('p-dash');
     }
 
     function downloadAnalysisFile(id) {
@@ -2272,33 +2510,38 @@
       showToast(`"${fileName}" 다운로드 시작`, 'ok');
     }
 
-    function deleteAnalysis(id) {
-      requireAuthThen(() => doDeleteAnalysis(id), '분석 결과 삭제는 관리자만 가능합니다.');
+    // 잘못 올린 엑셀 삭제: 경고 확인 뒤 로그인 상태여도 비밀번호를 다시 확인
+    async function deleteAnalysis(id) {
+      const all = await getCombinedHistoryList();
+      const r = all.find(x => x.id === id);
+      const label = r ? `"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})` : `ID ${id}번 결과`;
+      if (!(await confirmDialog(`${label}의 저장 결과를 삭제하면 복구할 수 없습니다. 삭제하시겠습니까?`, { title: '업로드 파일 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
+      _pendingPage = '';
+      _authCallback = () => doDeleteAnalysis(id, r ? r.fileName : '');
+      _openAuthModal('업로드 파일을 삭제하려면 비밀번호를 한 번 더 입력해 주세요.');
     }
 
-    function doDeleteAnalysis(id) {
-      genDbGet(id).then(async r => {
-        const labelName = r ? `"${r.fileName}" (기준일 ${r.wbsDate})` : `ID ${id}번 레코드`;
-        if (!(await confirmDialog(`${labelName} 저장 결과를 삭제하시겠습니까?`, { title: '분석 결과 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
-        const client = getSupabaseClient();
-        const doDelete = () => {
-          genDbDelete(id).catch(() => {});
-          // 지금 주소의 ?id=가 삭제한 결과면 주소에서 지움 — 새로고침·공유 시 없는 결과로 접속하지 않게(IR-14)
-          if (new URLSearchParams(window.location.search).get('id') === String(id)) updateUrlParam(null);
-          showToast('삭제되었습니다.', '');
-          updateHistoryCount();
-          populateFileSelect();
-          renderHistoryPage();
-        };
-        if (client) {
-          showToast('클라우드에서 삭제 중...', 'info');
-          client.from('wbs_gen_analyses').delete().eq('id', id)
-            .then(({ error }) => { if (error) throw error; doDelete(); })
-            .catch(err => showToast('클라우드 삭제 오류: ' + err.message, 'err'));
-        } else {
-          doDelete();
-        }
-      });
+    function doDeleteAnalysis(id, fileName) {
+      const client = getSupabaseClient();
+      const doDelete = () => {
+        genDbDelete(id).catch(() => {});
+        // 지금 주소의 ?id=가 삭제한 결과면 주소에서 지움 — 새로고침 때 없는 결과로 접속하지 않게(IR-14)
+        if (new URLSearchParams(window.location.search).get('id') === String(id)) updateUrlParam(null);
+        showToast('삭제되었습니다.', '');
+        // 화면에 열려 있던 파일을 지웠으면 다시 불러와 남은 최신 결과로 교체(현재 화면 주소는 유지)
+        if (fileName && fileName === CURRENT_SOURCE_NAME) { setTimeout(() => location.reload(), 800); return; }
+        updateHistoryCount();
+        populateFileSelect();
+        renderHistoryPage();
+      };
+      if (client) {
+        showToast('클라우드에서 삭제 중...', 'info');
+        client.from('wbs_gen_analyses').delete().eq('id', id)
+          .then(({ error }) => { if (error) throw error; doDelete(); })
+          .catch(err => showToast('클라우드 삭제 오류: ' + err.message, 'err'));
+      } else {
+        doDelete();
+      }
     }
 
     /* ===================== Gen IndexedDB (로컬 캐시) ===================== */
@@ -2466,6 +2709,7 @@
       // 이전 프로젝트의 파일 정보가 저장 바에 남지 않게 숨김(IR-11)
       document.getElementById('saveBar').classList.remove('visible');
       initFilters(); renderAll();
+      resetMemberFilter();
       updateHistoryCount(); populateFileSelect(); renderMembersPage();
       getCombinedHistoryList().then(all => {
         const latest = all
@@ -2503,11 +2747,12 @@
           return;
         }
         const list = data || [];
+        renderListControls('projects', document.getElementById('projList'), list.length, renderProjectList);
         if (list.length === 0) {
           document.getElementById('projList').innerHTML = '<div class="proj-empty">등록된 프로젝트가 없습니다.<br>새 프로젝트 추가를 눌러 시작해 주세요.</div>';
           return;
         }
-        document.getElementById('projList').innerHTML = list.map(p => {
+        document.getElementById('projList').innerHTML = listSlice('projects', list).map(p => {
           const isActive = _currentProject && _currentProject.id === p.id;
           const dates = (p.start_date || p.end_date) ? `${p.start_date || '?'} ~ ${p.end_date || '?'}` : '';
           const escapedP = esc(JSON.stringify(p));
@@ -2522,8 +2767,8 @@
                 ? '<span class="badge-info">현재 선택</span>'
                 : `<button type="button" class="btn btn-primary btn-row" onclick="selectProject(JSON.parse(this.dataset.p))" data-p="${escapedP}">선택</button>`
               }
-              <button type="button" class="btn btn-secondary btn-row" onclick="openProjAddForm(JSON.parse(this.dataset.p))" data-p="${escapedP}">수정</button>
-              <button type="button" class="btn btn-delete btn-row" onclick="deleteProjConfirm(${p.id})">삭제</button>
+              <button type="button" class="btn btn-secondary btn-row" onclick="openProjAddForm(JSON.parse(this.dataset.p))" data-p="${escapedP}">프로젝트명 수정</button>
+              <button type="button" class="btn btn-delete btn-row" onclick="deleteProjConfirm(${p.id})">프로젝트 삭제</button>
             </div>
           </div>`;
         }).join('');
@@ -2532,6 +2777,13 @@
 
     async function deleteProjConfirm(id) {
       if (!(await confirmDialog(`본 프로젝트를 삭제하면 프로젝트 내 연관 데이터(파일, 구성원 정보 등)가 전부 삭제됩니다. 진행하시겠습니까?`, { title: '프로젝트 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
+      // 로그인 상태여도 삭제 직전에 비밀번호를 다시 확인 — 실수 방지
+      _pendingPage = '';
+      _authCallback = () => doDeleteProject(id);
+      _openAuthModal('프로젝트를 삭제하려면 비밀번호를 한 번 더 입력해 주세요.');
+    }
+
+    function doDeleteProject(id) {
       const client = getSupabaseClient();
       if (!client) { showToast('Supabase 연결이 필요합니다.', 'err'); return; }
       client.from('wbs_gen_projects').delete().eq('id', id).then(({ error }) => {
