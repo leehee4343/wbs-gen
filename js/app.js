@@ -1497,6 +1497,7 @@
           statusEl.textContent = `"${file.name}" 적용 완료 — TASK ${parsed.length}건 인식${dateNote}`;
           addUploadHistory(file.name, parsed.length, true);
           showSaveBar(file.name, fmt(TODAY), parsed.length);
+          document.getElementById('fileSelect').value = '';   // 새 업로드는 아직 저장 전이므로 이전 선택 기준일을 남기지 않음(DF-032)
         } catch (err) {
           statusEl.className = 'upload-status show err';
           statusEl.textContent = `파일을 분석하지 못했습니다: ${err.message}`;
