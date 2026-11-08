@@ -666,7 +666,7 @@
     }
 
     /* ===== 관리자 인증 ===== */
-    const PROTECTED_PAGES = new Set(['p-upload', 'p-members', 'p-mail']);
+    const PROTECTED_PAGES = new Set(['p-upload', 'p-history', 'p-members', 'p-mail']);   // 관리자 전용 서비스 메뉴 전체(DF-024)
     let _authed = false;
     let _pendingPage = '';
 
@@ -684,7 +684,7 @@
       if (!PROTECTED_PAGES.has(pageId) || _authed) { navigateTo(pageId); return; }
       _pendingPage = pageId;
       _authCallback = null;
-      const menuName = { 'p-upload': 'WBS 업데이트', 'p-members': '구성원 관리', 'p-mail': '메일 보내기' }[pageId];
+      const menuName = { 'p-upload': 'WBS 업데이트', 'p-history': '분석 결과 조회', 'p-members': '구성원 관리', 'p-mail': '메일 보내기' }[pageId];
       _openAuthModal(`${menuName} 메뉴는 관리자 확인 후 이용할 수 있습니다.`);   // DF-005
     }
 
