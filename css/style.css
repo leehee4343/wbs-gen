@@ -482,7 +482,8 @@ select.form-control,
 .badge { min-width: 54px; }
 .badge-info { background: var(--info-bg); color: var(--info); border-color: #bae6fd; }
 .badge-success, .badge.done          { background: var(--success-bg); color: var(--success-text); border-color: var(--success-line); }
-.badge-warning, .badge.progress      { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-line); }
+.badge-warning                       { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-line); }
+.badge.progress                      { background: var(--primary-light); color: var(--primary-blue); border-color: #bcd6f5; }
 .badge-danger,  .badge.delay         { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-line); }
 .badge-tag,     .badge.upcoming      { background: var(--bg-hover); color: var(--text-main); border-color: var(--border-card); }
 
@@ -837,7 +838,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .progress-bar { display: flex; align-items: center; gap: 8px; width: 160px; flex-shrink: 0; }
 .progress-track { flex: 1; min-width: 40px; height: 8px; border-radius: var(--radius-full); background: var(--border-card); overflow: hidden; }
 .progress-fill { height: 100%; border-radius: var(--radius-full); background: var(--primary-blue); transition: width .4s ease; }
-.progress-fill.is-delay { background: var(--point-red); }
+.progress-fill.is-delay { background: var(--danger-text); }
 .progress-fill.is-done { background: var(--point-green); }
 .progress-pct { flex-shrink: 0; min-width: 40px; font-size: 13px; color: var(--text-main); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .progress-pct .actual { color: var(--success-text); }
@@ -891,7 +892,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .tc-total { background: var(--bg-hover); color: var(--text-main); border-color: var(--border-card); }
 .tc-done  { background: var(--success-bg); color: var(--success-text); border-color: var(--success-line); }
 .tc-delay { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-line); }
-.tc-prog  { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-line); }
+.tc-prog  { background: var(--primary-light); color: var(--primary-blue); border-color: #bcd6f5; }
 .tree-phase-meta .progress-bar { width: 220px; }
 .tree-act-meta .progress-bar { width: 180px; }
 
@@ -929,8 +930,8 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .legend .lg-done { background: var(--point-green); }
-.legend .lg-delay { background: var(--point-red); }
-.legend .lg-progress { background: var(--point-orange); }
+.legend .lg-delay { background: var(--danger-text); }
+.legend .lg-progress { background: var(--primary-blue); }
 .legend .lg-upcoming { background: var(--border-divider); }
 
 /* ===================== WBS 업데이트 ===================== */
