@@ -193,6 +193,14 @@
       return `<div class="progress-bar"><div class="progress-track"><div class="progress-fill ${tone}" style="width:${percent}%"></div></div><span class="progress-pct">${text}</span></div>`;
     }
 
+    // 상태별 막대 색 — 예정은 범례·배지와 같은 회색 계열(DF-025)
+    function statusBarTone(st) { return { delay: 'is-delay', done: 'is-done', upcoming: 'is-upcoming' }[st] || ''; }
+    function groupBarTone(delay, done, progress, total) {
+      if (delay > 0) return 'is-delay';
+      if (done === total) return 'is-done';
+      return done === 0 && progress === 0 ? 'is-upcoming' : '';
+    }
+
     function getWeekRange(date) {
       const d = startOfDay(date);
       const day = d.getDay();
@@ -241,7 +249,7 @@
       const st = taskStatus(t);
       const start = parseDate(t.start), end = parseDate(t.end);
       const dateLabel = (start && end) ? `${fmtShort(start)} ~ ${fmtShort(end)}` : '-';
-      const barTone = st === 'delay' ? 'is-delay' : (st === 'done' ? 'is-done' : '');
+      const barTone = statusBarTone(st);
       const dd = delayDays(t);
       const ap = t.actualProgress;
       const progGap = (ap !== undefined && ap < t.progress) ? t.progress - ap : 0;
@@ -444,7 +452,7 @@
       ${done  > 0 ? `<span class="tree-chip tc-done">완료 ${done}</span>` : ''}
       ${delay > 0 ? `<span class="tree-chip tc-delay">지연 ${delay}</span>` : ''}
       ${prog  > 0 ? `<span class="tree-chip tc-prog">진행 ${prog}</span>` : ''}
-      ${progressBarHtml(avgProg, delay > 0 ? 'is-delay' : (done === total ? 'is-done' : ''))}
+      ${progressBarHtml(avgProg, groupBarTone(delay, done, prog, total))}
     </div>
   </div>
   <div class="tree-phase-body">`;
@@ -465,7 +473,7 @@
           <span class="tree-chip tc-total">${tasks.length}건</span>
           ${aDelay > 0 ? `<span class="tree-chip tc-delay">지연 ${aDelay}</span>` : ''}
           ${aProg  > 0 ? `<span class="tree-chip tc-prog">진행 ${aProg}</span>` : ''}
-          ${progressBarHtml(aAvg, aDelay > 0 ? 'is-delay' : (aDone === tasks.length ? 'is-done' : ''))}
+          ${progressBarHtml(aAvg, groupBarTone(aDelay, aDone, aProg, tasks.length))}
         </div>
       </div>
       <div class="tree-act-body">`;
@@ -480,7 +488,7 @@
               ? `<span class="t-delaydays">${dd}일 지연</span>`
               : (st === 'delay' && isDelayByDate(t) ? `<span class="t-delaydays">마감일 도래</span>` : '');
             const rowCls = st === 'delay' ? 'is-delay' : (st === 'done' ? 'is-done' : '');
-            const barCls = st === 'done' ? 'is-done' : (st === 'delay' ? 'is-delay' : '');
+            const barCls = statusBarTone(st);
             const ap = t.actualProgress;
             const showDual = ap !== undefined && ap !== t.progress;
             const titleAttr = ` title="${esc(t.task + (t.deliverable ? ' | 산출물: ' + t.deliverable : ''))}"`;
