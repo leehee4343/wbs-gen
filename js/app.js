@@ -2700,7 +2700,7 @@
       }).catch(err => {
         const msg = err?.message || String(err);
         if (msg.includes('does not exist') || msg.includes('relation')) {
-          showToast('Supabase 테이블이 없습니다. supabase_setup_gen.sql 을 실행하세요.', 'err');
+          showToast('Supabase 테이블이 없습니다. sql/supabase_setup_wbs_gen.sql 을 실행하세요.', 'err');   // 현행 wbs_gen 스키마 생성 파일 안내(DF-028)
         } else {
           showToast('저장 오류: ' + msg, 'err');
         }
@@ -2749,7 +2749,7 @@
         if (error) {
           const m = error?.message || String(error);
           if (m.includes('does not exist') || m.includes('relation')) {
-            document.getElementById('projList').innerHTML = '<div class="proj-empty is-error">Supabase 테이블이 없습니다.<br>Supabase SQL Editor에서 sql/supabase_setup_gen.sql을 실행해 주세요.</div>';
+            document.getElementById('projList').innerHTML = '<div class="proj-empty is-error">Supabase 테이블이 없습니다.<br>Supabase SQL Editor에서 sql/supabase_setup_wbs_gen.sql을 실행해 주세요.</div>';
           } else {
             showToast('프로젝트 목록 오류: ' + m, 'err');
           }

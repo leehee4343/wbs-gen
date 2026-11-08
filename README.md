@@ -6,7 +6,7 @@
 
 - 화면: `index.html`, `js/app.js`, `css/style.css` (빌드 없는 Vanilla JS)
 - 설정: `config/supabase.config.js`, `config/emailjs.config.js`
-- 데이터베이스: Supabase 스키마 `wbs_gen` (테이블 `wbs_gen_projects`, `wbs_gen_members`, `wbs_gen_analyses`)
+- 데이터베이스: Supabase 스키마 `wbs_gen` (테이블 `wbs_gen_projects`, `wbs_gen_members`, `wbs_gen_analyses`). 새 환경은 `sql/supabase_setup_wbs_gen.sql`로 생성
 
 ## 메뉴
 
