@@ -780,12 +780,18 @@
       if (pageId === 'p-mail') renderMailPage();
     }
 
+    // 메뉴 클릭 — 프로젝트 관리는 화면 이동 없이 상단 전환 버튼과 같은 창을 연다
+    function activateNavItem(item) {
+      if (item.dataset.action === 'project') requireAuthThen(openProjectModal, '프로젝트 관리 메뉴는 관리자 확인 후 이용할 수 있습니다.');
+      else requireAuth(item.dataset.page);
+    }
+
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.setAttribute('role', 'link');
+      item.setAttribute('role', item.dataset.action ? 'button' : 'link');
       item.setAttribute('tabindex', '0');
-      item.addEventListener('click', () => requireAuth(item.dataset.page));
+      item.addEventListener('click', () => activateNavItem(item));
       item.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); requireAuth(item.dataset.page); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateNavItem(item); }
       });
     });
 
@@ -887,7 +893,7 @@
       });
     }
 
-    // 메일 제목·인사말에 쓰는 담당자 정보 — 한 곳에서 바꾸도록 모음. 헤더 사용자명(index.html .user-profile)도 같은 값으로 맞춤(IR-09)
+    // 메일 제목·인사말에 쓰는 담당자 정보 — 한 곳에서 바꾸도록 모음(IR-09)
     const MAIL_OWNER = { name: '이희성', title: '이사', email: 'leehee4343@gmail.com' };
     const MAIL_HEADER_NOTICE =
       `안녕하세요. ${MAIL_OWNER.name} ${MAIL_OWNER.title}입니다.\n` +
