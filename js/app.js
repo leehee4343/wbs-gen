@@ -1303,7 +1303,7 @@
       _mailCc.clear();
       document.querySelectorAll('#mailToChips .mail-chip, #mailCcChips .mail-chip')
         .forEach(el => { el.classList.remove('selected'); el.setAttribute('aria-pressed', 'false'); });
-      document.getElementById('mailSubject').value = '';
+      document.getElementById('mailSubject').value = MAIL_DEFAULT_SUBJECT;   // 제목은 고정 문구이므로 비우지 않고 다시 채움(DF-026)
       const editor = ensureMailEditor();
       if (editor) editor.setText('');
     }
