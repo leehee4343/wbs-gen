@@ -1516,70 +1516,6 @@
       reader.readAsArrayBuffer(file);
     }
 
-    /* ===================== IndexedDB ===================== */
-    const DB_NAME = 'WbsAnalysisDB', DB_VER = 2, STORE = 'analyses', MSTORE = 'members';
-    let _db = null;
-
-    function initDB() {
-      return new Promise((resolve, reject) => {
-        if (_db) { resolve(_db); return; }
-        const req = indexedDB.open(DB_NAME, DB_VER);
-        req.onupgradeneeded = e => {
-          const d = e.target.result;
-          if (!d.objectStoreNames.contains(STORE)) {
-            const s = d.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
-            s.createIndex('wbsDate', 'wbsDate', { unique: false });
-          }
-          if (!d.objectStoreNames.contains(MSTORE)) {
-            d.createObjectStore(MSTORE, { keyPath: 'id', autoIncrement: true });
-          }
-        };
-        req.onsuccess = e => { _db = e.target.result; resolve(_db); };
-        req.onerror = e => reject(e.target.error);
-      });
-    }
-
-    function dbGet(id) {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const req = d.transaction(STORE, 'readonly').objectStore(STORE).get(id);
-        req.onsuccess = e => resolve(e.target.result);
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
-    function dbGetAll() {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const req = d.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-        req.onsuccess = e => resolve([...e.target.result].reverse());
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
-    function dbAdd(record) {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const req = d.transaction(STORE, 'readwrite').objectStore(STORE).add(record);
-        req.onsuccess = e => resolve(e.target.result);
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
-    function dbDelete(id) {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const req = d.transaction(STORE, 'readwrite').objectStore(STORE).delete(id);
-        req.onsuccess = () => resolve();
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
-    function dbUpdate(id, record) {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const rec = Object.assign({}, record, { id });
-        const req = d.transaction(STORE, 'readwrite').objectStore(STORE).put(rec);
-        req.onsuccess = () => resolve(id);
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
     /* === wbs_gen_members 기반 구성원 CRUD (프로젝트 범용) === */
     function mdbGetAll() {
       if (!_currentProject) return Promise.resolve([]);
@@ -1662,28 +1598,6 @@
       }
       return client.from('wbs_gen_members').delete().eq('id', id)
         .then(({ error }) => { if (error) throw error; });
-    }
-
-    function dbClear() {
-      return initDB().then(d => new Promise((resolve, reject) => {
-        const req = d.transaction(STORE, 'readwrite').objectStore(STORE).clear();
-        req.onsuccess = () => resolve();
-        req.onerror = e => reject(e.target.error);
-      }));
-    }
-
-    function deleteAllAnalyses() {
-      dbGetAll().then(async all => {
-        if (all.length === 0) { showToast('삭제할 저장 결과가 없습니다.', ''); return; }
-        if (!(await confirmDialog(`저장된 분석 결과 ${all.length}건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`, { title: '전체 삭제', okLabel: '삭제', okClass: 'btn-delete' }))) return;
-        dbClear().then(() => {
-          showToast('전체 삭제 완료', 'ok');
-          updateHistoryCount();
-          populateFileSelect();
-          renderHistoryPage();
-          updateUrlParam(null);
-        }).catch(err => showToast('삭제 오류: ' + err.message, 'err'));
-      });
     }
 
     /* ===================== 토스트 ===================== */
@@ -2737,8 +2651,6 @@
       const name = _currentProject ? _currentProject.name : '프로젝트 미선택';
       const el = document.getElementById('sidebarProjectName');
       if (el) { el.textContent = name; el.title = name; }   // 말줄임된 긴 이름은 마우스 오버(title)로 전체 확인(가이드 긴 값 처리, DF-016)
-      const h1 = document.getElementById('topbarProjectName');
-      if (h1) h1.textContent = _currentProject ? `${_currentProject.name} — WBS 일정 분석` : 'WBS 일정 분석';
       document.title = _currentProject ? `${_currentProject.name} | WBS 일정 분석` : 'WBS 일정 분석';
     }
 
@@ -2849,7 +2761,8 @@
     updateProjectUI();
     renderAll();
 
-    Promise.all([initDB(), initGenDB()]).then(() => {
+    // 구버전 저장소 WbsAnalysisDB는 코드에서 제거하고 사용자 브라우저의 기존 공간은 건드리지 않음(DF-029)
+    initGenDB().then(() => {
       updateSupabaseStatus();
       initSupabaseEvents();
 
