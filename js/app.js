@@ -1059,7 +1059,7 @@
       if (value === 'current') {
         const text = buildNextWeekText(WBS_DATA, TODAY, CURRENT_SOURCE_NAME);
         if (!text) { showToast('현재 분석 결과에 복사할 업무가 없습니다.', ''); return; }
-        setMailBodyWithNotice(editor, text, `기준일 ${fmt(TODAY)}의 업무 텍스트를 본문에 넣었습니다.`);
+        setMailBodyWithNotice(editor, text, `기준일 ${fmtDot(TODAY)}의 업무 텍스트를 본문에 넣었습니다.`);   // 화면 날짜 규칙 YYYY.MM.DD(DF-030)
         return;
       }
       fetchFullRecord(Number(value)).then(record => {
@@ -1067,7 +1067,7 @@
         const baseline = startOfDay(parseDate(record.wbsDate));
         const text = buildNextWeekText(record.tasks, baseline, record.fileName);
         if (!text) { showToast('선택한 기준일에 복사할 업무가 없습니다.', ''); return; }
-        setMailBodyWithNotice(editor, text, `기준일 ${record.wbsDate}의 업무 텍스트를 본문에 넣었습니다.`);
+        setMailBodyWithNotice(editor, text, `기준일 ${fmtDot(record.wbsDate)}의 업무 텍스트를 본문에 넣었습니다.`);
       }).catch(err => showToast('분석 결과 불러오기 오류: ' + err.message, 'err'));
     }
 
