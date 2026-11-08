@@ -843,6 +843,7 @@ a.kpi:hover { box-shadow: var(--shadow-hover); border-color: var(--primary-line)
 .progress-fill.is-upcoming { background: #94a3b8; }   /* 막대 바탕과 구분되도록 범례보다 진한 회색(DF-025) */
 .progress-pct { flex-shrink: 0; min-width: 40px; font-size: 13px; color: var(--text-main); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .progress-pct .actual { color: var(--success-text); }
+.progress-pct .missing { color: var(--danger-text); }
 .task-date { width: 172px; flex-shrink: 0; white-space: nowrap; font-size: 13px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 .t-meta .is-alert { color: var(--danger-text); }

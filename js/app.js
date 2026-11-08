@@ -194,6 +194,8 @@
     }
 
     // 상태별 막대 색 — 예정은 범례·배지와 같은 회색 계열(DF-025)
+    function hasActualValue(t) { return t.hasActual !== false && t.actualProgress !== undefined && t.actualProgress !== null; }
+
     function statusBarTone(st) { return { delay: 'is-delay', done: 'is-done', upcoming: 'is-upcoming' }[st] || ''; }
     function groupBarTone(delay, done, progress, total) {
       if (delay > 0) return 'is-delay';
@@ -263,10 +265,11 @@
       const actPart = t.activity ? `<span class="t-activity">${esc(t.activity)}</span>` : '';
       const delivPart = t.deliverable ? `<span class="m-tag">산출물: ${esc(t.deliverable)}</span>` : '';
 
-      const hasActual = ap !== undefined && ap !== null;
+      // 실적 시트 값이 없으면 actualProgress에는 계획값이 복사되어 있으므로 값이 아닌 hasActual로 판단(DF-031)
+      const hasActual = hasActualValue(t);
       const hasDiff = hasActual && ap !== t.progress;
       let progressHtml;
-      if (showPlanActual || hasDiff) {
+      if (showPlanActual || hasDiff || (!hasActual && st === 'delay')) {   // 예정 행에는 실적 미입력을 표시하지 않음(DF-031)
         const actualValue = hasActual ? ap : 0;
         const diff = actualValue - t.progress;
         const gapClass = diff < 0 ? 'behind' : 'ahead';
@@ -492,7 +495,8 @@
             const ap = t.actualProgress;
             const showDual = ap !== undefined && ap !== t.progress;
             const titleAttr = ` title="${esc(t.task + (t.deliverable ? ' | 산출물: ' + t.deliverable : ''))}"`;
-            const pctText = showDual ? `${t.progress}% · <span class="actual" title="실적">${ap}%</span>` : `${t.progress}%`;
+            const noActual = !hasActualValue(t) && st !== 'upcoming';   // DF-031
+            const pctText = noActual ? `${t.progress}% · <span class="missing">미입력</span>` : (showDual ? `${t.progress}% · <span class="actual" title="실적">${ap}%</span>` : `${t.progress}%`);
 
             html += `
         <div class="tree-task-row ${rowCls}">
@@ -2329,7 +2333,7 @@
           }
           const st = STATUS_LABEL[taskStatusFor(t)] || '';
           const pct = t.progress != null ? ` (계획 ${t.progress}%)` : '';
-          const ap  = t.actualProgress != null ? ` / 실적 ${t.actualProgress}%` : '';
+          const ap  = hasActualValue(t) ? ` / 실적 ${t.actualProgress}%` : '';   // 실적 미입력은 보고 텍스트에서 생략(DF-031)
           const start = t.start ? ` ${t.start}` : '';
           const end   = t.end   ? ` ~ ${t.end}` : '';
           lines.push(`    ${i + 1}. [${st}] ${t.task}${pct}${ap} |${start}${end}`);
@@ -2355,7 +2359,7 @@
           }
           const st = STATUS_LABEL[taskStatusFor(t)] || '';
           const pct = t.progress != null ? ` (계획 ${t.progress}%)` : '';
-          const ap  = t.actualProgress != null && t.actualProgress !== t.progress
+          const ap  = hasActualValue(t) && t.actualProgress !== t.progress
             ? ` / 실적 ${t.actualProgress}%` : '';
           const start = t.start ? ` ${t.start}` : '';
           const end   = t.end   ? ` ~ ${t.end}` : '';
@@ -2384,7 +2388,7 @@
           const gap = t.actualProgress != null ? t.progress - t.actualProgress : 0;
           const issue = isDelayByBaseline(t) ? `${dd}일 지연` : `실적 ${gap}%p 미달`;
           const pct = t.progress != null ? ` (계획 ${t.progress}%)` : '';
-          const ap = t.actualProgress != null ? ` / 실적 ${t.actualProgress}%` : '';
+          const ap = hasActualValue(t) ? ` / 실적 ${t.actualProgress}%` : '';
           const start = t.start ? ` ${t.start}` : '';
           const end = t.end ? ` ~ ${t.end}` : '';
           lines.push(`    ${i + 1}. [${issue}] ${t.task}${pct}${ap} |${start}${end}`);
