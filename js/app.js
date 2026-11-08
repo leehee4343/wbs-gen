@@ -1290,16 +1290,42 @@
       return { tasks: data, todayStr };
     }
 
+    // WBS 업데이트 하단 목록: DB에 저장된 파일 전체 + 이번 접속의 저장 전·실패 건(DF-023)
+    const _uploadSession = [];   // 아직 DB에 없는 건만 화면에 남김(저장되면 DB 행으로 대체)
+    let uploadHistoryRenderVersion = 0;
+
     function addUploadHistory(filename, count, ok) {
+      _uploadSession.unshift({ fileName: filename, count, ok, at: Date.now(), projectId: _currentProject?.id ?? null });
+      renderUploadHistory();
+    }
+
+    function fmtDateTime(value) {
+      const d = new Date(value);
+      if (!value || isNaN(d)) return '-';
+      return fmtDot(startOfDay(d)) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+
+    function uploadHistoryRow(time, fileName, count, badge) {
+      return `<tr><td>${time}</td><td class="cell-text">${esc(fileName)}</td><td>${count}</td><td>${badge}</td></tr>`;
+    }
+
+    function renderUploadHistory() {
+      const version = ++uploadHistoryRenderVersion;
       const tbody = document.getElementById('uploadHistoryBody');
-      if (tbody.children.length === 1 && tbody.children[0].children.length === 1) {
-        tbody.innerHTML = '';
-      }
-      const now = new Date();
-      const tstr = fmtDot(startOfDay(now)) + ' ' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${tstr}</td><td class="cell-text">${esc(filename)}</td><td>${count}</td><td>${ok ? '<span class="badge-success">적용 완료</span>' : '<span class="badge-danger">실패</span>'}</td>`;
-      tbody.prepend(tr);
+      getCombinedHistoryList().catch(err => { console.error('업로드 목록 조회 실패:', err); return []; }).then(all => {
+        if (version !== uploadHistoryRenderVersion) return;
+        const projectId = _currentProject?.id ?? null;
+        const isSaved = e => all.some(r => r.fileName === e.fileName && new Date(r.savedAt).getTime() >= e.at);
+        const sessionRows = _uploadSession
+          .filter(e => e.projectId === projectId && !(e.ok && isSaved(e)))
+          .map(e => uploadHistoryRow(fmtDateTime(e.at), e.fileName, e.count,
+            e.ok ? '<span class="badge-warning">저장 전</span>' : '<span class="badge-danger">실패</span>'));
+        const savedRows = [...all]
+          .sort((a, b) => (b.wbsDate || '').localeCompare(a.wbsDate || '') || (b.savedAt || '').localeCompare(a.savedAt || ''))
+          .map(r => uploadHistoryRow(fmtDateTime(r.savedAt), r.fileName, r.summary?.total ?? '-', '<span class="badge-success">저장 완료</span>'));
+        const rows = sessionRows.concat(savedRows);
+        tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="4" class="table-empty">업로드한 이력이 없습니다.</td></tr>';
+      });
     }
 
     function handleFile(file) {
@@ -1621,6 +1647,7 @@
 
     /* ===================== 분석 결과 조회 페이지 ===================== */
     function updateHistoryCount() {
+      renderUploadHistory();   // 저장·삭제·프로젝트 전환 때마다 업로드 목록도 함께 갱신(DF-023)
       getCombinedHistoryList().then(list => {
         const badge = document.getElementById('navCountHistory');
         const label = document.getElementById('historyCountLabel');
@@ -2206,7 +2233,7 @@
       TODAY = startOfDay(parseDate(r.wbsDate));
       initFilters();
       renderAll();
-      showSaveBar(r.fileName, r.wbsDate, tasks.length);
+      document.getElementById('saveBar').classList.remove('visible');   // 이미 저장된 결과를 불러온 것이므로 최종 저장 안내를 띄우지 않음(DF-023)
       showToast(`"${r.fileName}" (기준일 ${fmtDot(r.wbsDate)})을 불러왔습니다.`, 'ok');
       warnIfSummaryChanged(r.summary);
       updateUrlParam(r.localOnly ? null : id);   // 브라우저에만 저장된 결과는 공유 링크를 만들지 않음(IR-14)
@@ -2436,7 +2463,7 @@
       closeProjModal();
       WBS_DATA = []; CURRENT_SOURCE_NAME = ''; CURRENT_FILE_BUFFER = null;
       TODAY = startOfDay(new Date());
-      // 이전 프로젝트의 파일 정보가 저장 바에 남지 않게 숨김 — 새 프로젝트의 최신 결과를 불러오면 다시 표시됨(IR-11)
+      // 이전 프로젝트의 파일 정보가 저장 바에 남지 않게 숨김(IR-11)
       document.getElementById('saveBar').classList.remove('visible');
       initFilters(); renderAll();
       updateHistoryCount(); populateFileSelect(); renderMembersPage();
